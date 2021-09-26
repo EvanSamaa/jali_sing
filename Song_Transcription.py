@@ -16,6 +16,7 @@ if __name__ == "__main__":
 
     # obtain pitch from the sound file (this is not bad)
     pitch = snd.to_pitch(time_step=dt, pitch_ceiling=1200)
+    pitch= snd.to_pitch(time)
     pitch_arr = []
     for i in range(0, len(pitch.selected_array)):
         pitch_arr.append(pitch.selected_array[i][0])
