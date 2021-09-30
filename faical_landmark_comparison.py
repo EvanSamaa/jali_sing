@@ -5,6 +5,7 @@ import shutil
 import json
 import moviepy.editor as ed
 import time
+from matplotlib import pyplot as plt
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_face_mesh = mp.solutions.face_mesh
@@ -56,8 +57,8 @@ def normalize_facial_landmark():
 if __name__ == "__main__":
 
     IMAGE_FILES = split_video_to_images("original_clip.mov", "C:\\Users\\evansamaa\\Desktop\\Jali_Experiments\\zombie\\videos")
-    IMAGE_FILES = ["C:\\Users\\evansamaa\\Desktop\\frozen_elsa_png_7_copy1.png"]
-    # IMAGE_FILES = [IMAGE_FILES[0], IMAGE_FILES[1]]
+    # IMAGE_FILES = ["C:\\Users\\evansamaa\\Desktop\\frozen_elsa_png_7_copy1.png"]
+    IMAGE_FILES = [IMAGE_FILES[0], IMAGE_FILES[1]]
     drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
     with mp_face_mesh.FaceMesh(
             static_image_mode=True,
@@ -67,16 +68,12 @@ if __name__ == "__main__":
         for idx, file in enumerate(IMAGE_FILES):
             image = cv2.imread(file)
             # Convert the BGR image to RGB before processing.
-            start = time.time()
             results = face_mesh.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-            dt = time.time() - start
-            print(dt)
             # Print and draw face mesh landmarks on the image.
             if not results.multi_face_landmarks:
                 continue
             annotated_image = image.copy()
             # print(results.multi_face_landmarks)
-            # A[2]
             for face_landmarks in results.multi_face_landmarks:
                 # print('face_landmarks:', face_landmarks)
                 mp_drawing.draw_landmarks(
@@ -95,8 +92,21 @@ if __name__ == "__main__":
                         .get_default_face_mesh_contours_style())
             imgs_arr.append(annotated_image)
             # cv2.imwrite('./tmp/annotated_image' + str(idx) + '.png', annotated_image)
-            cv2.imshow("k", annotated_image)
-            cv2.waitKey(0)
+            # cv2.imshow("k", annotated_image)
+            # cv2.waitKey(0)
+            x_coord = []
+            y_coord = []
+            for face_landmarks in results.multi_face_landmarks:
+                for landmark in face_landmarks.landmark:
+                    # if len(x_coord) >= 68:
+                    #     break
+                    x_coord.append(landmark.x)
+                    y_coord.append(landmark.y)
+                    z_coord.append()
+            plt.scatter(x_coord, y_coord)
+            plt.show()
+            plt.close(0.1)
+
 
         # size = (imgs_arr[0].shape[0], imgs_arr[0].shape[1])
         # fps = 25
