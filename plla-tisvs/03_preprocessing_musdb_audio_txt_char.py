@@ -23,17 +23,22 @@ import yaml
 # https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
 yaml.warnings({'YAMLLoadWarning': False})
 
-path_to_musdb = '/Volumes/Evan_disk/Speech_data_set/musdb18/' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
-path_to_train_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/train_lyrics/'
-path_to_test_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/test_lyrics/'
+# path_to_musdb = '/Volumes/Evan_disk/Speech_data_set/musdb18/' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
+# path_to_train_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/train_lyrics/'
+# path_to_test_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/test_lyrics/'
+# path_to_save_data = '/Volumes/Evan_disk/Speech_data_set/musdb_with_lyrics'
+
+path_to_musdb = 'E:/Speech_data_set/musdb18' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
+path_to_train_lyrics = 'E:/Speech_data_set/musdb18/train_lyrics/'
+path_to_test_lyrics = 'E:/Speech_data_set/musdb18/test_lyrics/'
+path_to_save_data = 'E:/Speech_data_set/musdb_with_lyrics'
 
 pickle_in = open('./dicts/char2idx.pickle', 'rb')
 char2idx = pickle.load(pickle_in)
 # char2idx = {}
 target_sr = 16000
-
-path_to_save_data = '/Volumes/Evan_disk/Speech_data_set/musdb_with_lyrics'
-
+print(char2idx)
+char2idx["-"] = 32
 # ------------------------------------------------------------------------------------------------------------------
 # make folder structure
 
@@ -69,7 +74,7 @@ os.makedirs(os.path.join(path_to_save_data, 'train', 'audio', 'other_12s'), exis
 os.makedirs(os.path.join(path_to_save_data, 'train', 'audio', 'accompaniment_12s'), exist_ok=True)
 # ------------------------------------------------------------------------------------------------------------------
 
-musdb_corpus = musdb.DB(path_to_musdb)
+musdb_corpus = musdb.DB(root=path_to_musdb)
 training_tracks = musdb_corpus.load_mus_tracks(subsets=['train'])
 test_tracks = musdb_corpus.load_mus_tracks(subsets=['test'])
 
@@ -249,7 +254,7 @@ for track in training_tracks:
         for counter, line in enumerate(lyrics_lines):
 
             # ignore rejected lines
-            if line[0] == '*':
+            if line[0] == '*' or line[0] == '-':
                 continue
 
             annotations = line.split(' ', maxsplit=3)
@@ -279,8 +284,7 @@ for track in training_tracks:
             snippet_type = snippet_type_conversion[snippet_type]  # change to old format n, s, d, x
 
             text = annotations[3].replace('\n', '').replace(' ', '>')
-            # print(text)
-            # Asadfjnna[2]
+            print(text)
             text_idx = torch.tensor([char2idx[char] for char in text]).type(torch.float32)
 
             snippet_file_name = file_name + '_{}'.format(counter)
