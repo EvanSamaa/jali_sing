@@ -57,7 +57,6 @@ def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=
                 count += 1
                 frames.append(video_folder + "/frame%d.jpg" % count)
     return frames
-
 def normalize_facial_landmark():
     return 0
 def rotation_matrix_from_vectors(vec1, vec2):
@@ -73,12 +72,9 @@ def rotation_matrix_from_vectors(vec1, vec2):
     kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
     rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
     return rotation_matrix
-if __name__ == "__main__":
-
-    # IMAGE_FILES = split_video_to_images("original_clip.mov",
-    #                                     "C:\\Users\\evansamaa\\Desktop\\Jali_Experiments\\zombie\\videos")
-    IMAGE_FILES = split_video_to_images("zombie_part.mp4",
-                                        "/Users/evansamaa/Desktop/jali_sing_exp/zombie/")
+def extract_landmarks(input_video, input_dir, show_annotated_video = False, show_normalized_pts = False, tolerance = 0.01):
+    IMAGE_FILES = split_video_to_images(input_video,
+                                        input_dir)
     drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
     with mp_face_mesh.FaceMesh(
             static_image_mode=False,
@@ -102,14 +98,13 @@ if __name__ == "__main__":
                 land_mark_matrix_pts[i, 0] = face_landmarks[i].x
                 land_mark_matrix_pts[i, 1] = face_landmarks[i].y
                 land_mark_matrix_pts[i, 2] = face_landmarks[i].z
-            # these three points have to be on a flat and generally not deformable surface (e.g. )
             plane_pts = [land_mark_matrix_pts[98], land_mark_matrix_pts[327], land_mark_matrix_pts[168]]
             # rotate the projected matrix to face the camerra
             n = np.cross(plane_pts[2] - plane_pts[1], plane_pts[0] - plane_pts[1])
-            n = n/np.linalg.norm(n)
+            n = n / np.linalg.norm(n)
             R = rotation_matrix_from_vectors(n, np.array([0, 0, 1]))
-            rotated_land_marks = np.expand_dims(land_mark_matrix_pts, axis = 2)
-            R = np.expand_dims(R, axis = 0)
+            rotated_land_marks = np.expand_dims(land_mark_matrix_pts, axis=2)
+            R = np.expand_dims(R, axis=0)
             rotated_land_marks = R @ rotated_land_marks
             projected_land_marks = rotated_land_marks[:, 0:2, 0]
             projected_land_marks = projected_land_marks - projected_land_marks[4]
@@ -122,7 +117,7 @@ if __name__ == "__main__":
             r = np.array(((np.cos(theta), -np.sin(theta)),
                           (np.sin(theta), np.cos(theta))))
             diff = np.linalg.norm(r @ nose_ridge_vector - target_nose_ridge_direction)
-            if diff >= 0.1:
+            if diff >= tolerance:
                 theta = - theta
                 r = np.array(((np.cos(theta), -np.sin(theta)),
                               (np.sin(theta), np.cos(theta))))
@@ -133,37 +128,39 @@ if __name__ == "__main__":
 
             normalized_landmark = np.expand_dims(r, axis=0) @ np.expand_dims(projected_land_marks, axis=2)
 
-            # plt.subplot(2,1,1)
-            plt.scatter(normalized_landmark[:, 0], normalized_landmark[:, 1])
-            plt.scatter(normalized_landmark[4, 0], normalized_landmark[4, 1])
-            plt.scatter(normalized_landmark[98, 0], normalized_landmark[98, 1])
-            plt.scatter(normalized_landmark[327, 0], normalized_landmark[327, 1])
-            # plt.show()
-            plt.show(block=False)
-            plt.pause(0.01)
-            plt.close()
-            # annotate the image
-            annotated_image = image.copy()
-            for face_landmarks in results.multi_face_landmarks:
-                # print('face_landmarks:', face_landmarks)
-                mp_drawing.draw_landmarks(
-                    image=annotated_image,
-                    landmark_list=face_landmarks,
-                    connections=mp_face_mesh.FACEMESH_TESSELATION,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_drawing_styles
-                        .get_default_face_mesh_tesselation_style())
-                mp_drawing.draw_landmarks(
-                    image=annotated_image,
-                    landmark_list=face_landmarks,
-                    connections=mp_face_mesh.FACEMESH_CONTOURS,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_drawing_styles
-                        .get_default_face_mesh_contours_style())
-            imgs_arr.append(annotated_image)
-            # cv2.imwrite('./tmp/annotated_image' + str(idx) + '.png', annotated_image)
-            # cv2.imshow("k", annotated_image)
-            # cv2.waitKey(0)
+            if show_normalized_pts:
+                # plt.subplot(2,1,1)
+                plt.scatter(normalized_landmark[:, 0], normalized_landmark[:, 1])
+                plt.scatter(normalized_landmark[4, 0], normalized_landmark[4, 1])
+                plt.scatter(normalized_landmark[98, 0], normalized_landmark[98, 1])
+                plt.scatter(normalized_landmark[327, 0], normalized_landmark[327, 1])
+                # plt.show()
+                plt.show(block=False)
+                plt.pause(0.01)
+                plt.close()
+                # annotate the image
+            if show_annotated_video:
+                annotated_image = image.copy()
+                for face_landmarks in results.multi_face_landmarks:
+                    # print('face_landmarks:', face_landmarks)
+                    mp_drawing.draw_landmarks(
+                        image=annotated_image,
+                        landmark_list=face_landmarks,
+                        connections=mp_face_mesh.FACEMESH_TESSELATION,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_drawing_styles
+                            .get_default_face_mesh_tesselation_style())
+                    mp_drawing.draw_landmarks(
+                        image=annotated_image,
+                        landmark_list=face_landmarks,
+                        connections=mp_face_mesh.FACEMESH_CONTOURS,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_drawing_styles
+                            .get_default_face_mesh_contours_style())
+                # imgs_arr.append(annotated_image)
+                # cv2.imwrite('./tmp/annotated_image' + str(idx) + '.png', annotated_image)
+                cv2.imshow("k", annotated_image)
+                cv2.waitKey(1)
 
         # size = (imgs_arr[0].shape[0], imgs_arr[0].shape[1])
         # fps = 25
@@ -172,3 +169,14 @@ if __name__ == "__main__":
         # for i in range(len(imgs_arr)):
         #     out.write(imgs_arr[i])
         # out.release()
+if __name__ == "__main__":
+    # IMAGE_FILES = split_video_to_images("original_clip.mov",
+    #                                     "C:\\Users\\evansamaa\\Desktop\\Jali_Experiments\\zombie\\videos")
+    input_video = "zombie_part.mp4"
+    input_dir = "/Users/evansamaa/Desktop/jali_sing_exp/zombie/"
+    show_annotated_video = False
+    show_normalized_pts = False
+    tolerance = 0.01
+
+    extract_landmarks(input_video, input_dir, show_annotated_video=True)
+
