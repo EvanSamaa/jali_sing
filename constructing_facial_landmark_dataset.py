@@ -13,19 +13,30 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_face_mesh = mp.solutions.face_mesh
 
-
+def display_landmark(landmark_arr, fps):
+    for i in range(0, landmark_arr.shape[0]):
+        landmark_arr_i = landmark_arr[i]
+        plt.scatter(landmark_arr_i[:, 0], landmark_arr_i[:, 1])
+        # plt.scatter(landmark_arr_i[4, 0], landmark_arr_i[4, 1])
+        # plt.scatter(landmark_arr_i[98, 0], landmark_arr_i[98, 1])
+        # plt.scatter(landmark_arr_i[327, 0], landmark_arr_i[327, 1])
+        # plt.show()
+        plt.show(block=False)
+        plt.pause(0.001)
+        plt.close()
 def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=False):
     # filename can just be the name of the file,
     # the video must be in the video folder_path
 
+
     frames = []
     for video in os.listdir(video_folder_path):
-        print(video)
+        # print(video)
         if video == file_name:
             video_path = os.path.join(video_folder_path, video)
             video_folder = os.path.join(video_folder_path, video[:-4])
             try:
-                print(video_folder)
+                # print(video_folder)
                 os.mkdir(video_folder)
             except:
                 if remove:
@@ -33,8 +44,9 @@ def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=
                     os.mkdir(video_folder)
                 else:
                     dir_ls = os.listdir(video_folder)
-                    for i in range(0, len(dir_ls) - 2):
-                        frames.append(video_folder + "/frame%d.jpg" % i)
+                    for i in range(0, len(dir_ls)):
+                        if dir_ls[i][-4:] == ".jpg":
+                            frames.append(video_folder + "/frame%d.jpg" % i)
                     return frames
             my_clip = ed.VideoFileClip(video_path)
             my_clip.audio.write_audiofile(os.path.join(video_folder, "audio.mp3"))
@@ -54,8 +66,9 @@ def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=
             while success:
                 cv2.imwrite(video_folder + "/frame%d.jpg" % count, image)  # save frame as JPEG file
                 success, image = vidcap.read()
-                count += 1
                 frames.append(video_folder + "/frame%d.jpg" % count)
+                count += 1
+
     return frames
 def normalize_facial_landmark():
     return 0
@@ -73,9 +86,15 @@ def rotation_matrix_from_vectors(vec1, vec2):
     rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
     return rotation_matrix
 def extract_landmarks(input_video, input_dir, show_annotated_video = False, show_normalized_pts = False, tolerance = 0.01):
+
+    output_path = os.path.join(os.path.join(input_dir, input_video[:-4]), "landmark.npy")
+    if os.path.exists(output_path):
+        return output_path
+
     IMAGE_FILES = split_video_to_images(input_video,
                                         input_dir)
     drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
+    landmark_output = []
     with mp_face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
@@ -127,7 +146,7 @@ def extract_landmarks(input_video, input_dir, show_annotated_video = False, show
                                   (np.sin(theta), np.cos(theta))))
 
             normalized_landmark = np.expand_dims(r, axis=0) @ np.expand_dims(projected_land_marks, axis=2)
-
+            landmark_output.append(normalized_landmark[:, :, 0])
             if show_normalized_pts:
                 # plt.subplot(2,1,1)
                 plt.scatter(normalized_landmark[:, 0], normalized_landmark[:, 1])
@@ -161,22 +180,26 @@ def extract_landmarks(input_video, input_dir, show_annotated_video = False, show
                 # cv2.imwrite('./tmp/annotated_image' + str(idx) + '.png', annotated_image)
                 cv2.imshow("k", annotated_image)
                 cv2.waitKey(1)
+        landmark_output = np.array(landmark_output)
+        np.save(output_path, landmark_output)
+        return output_path
 
-        # size = (imgs_arr[0].shape[0], imgs_arr[0].shape[1])
-        # fps = 25
-        #
-        # out = cv2.VideoWriter('./tmp/annotated_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
-        # for i in range(len(imgs_arr)):
-        #     out.write(imgs_arr[i])
-        # out.release()
 if __name__ == "__main__":
     # IMAGE_FILES = split_video_to_images("original_clip.mov",
     #                                     "C:\\Users\\evansamaa\\Desktop\\Jali_Experiments\\zombie\\videos")
     input_video = "zombie_part.mp4"
     input_dir = "/Users/evansamaa/Desktop/jali_sing_exp/zombie/"
+    landmark_output = np.zeros((1,2))
+    np.save(os.path.join(os.path.join(input_dir, input_video[:-4]), "landmark.npy"), landmark_output)
     show_annotated_video = False
     show_normalized_pts = False
     tolerance = 0.01
 
-    extract_landmarks(input_video, input_dir, show_annotated_video=True)
-
+    input_videos = ["high vowels.mp4", "low vowels.mp4", "medium vowels.mp4"]
+    input_dir = "/Volumes/TIRE(D)MEN/vowel_in_different_pitch"
+    output_list = []
+    for i in range(0, 3):
+        output = extract_landmarks(input_videos[i], input_dir)
+        output_list.append(output)
+    display_landmark(np.load(output_list[1]), fps=60)
+    A[2]

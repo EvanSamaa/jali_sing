@@ -23,15 +23,15 @@ import yaml
 # https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
 yaml.warnings({'YAMLLoadWarning': False})
 
-# path_to_musdb = '/Volumes/Evan_disk/Speech_data_set/musdb18/' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
-# path_to_train_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/train_lyrics/'
-# path_to_test_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/test_lyrics/'
-# path_to_save_data = '/Volumes/Evan_disk/Speech_data_set/musdb_with_lyrics'
+path_to_musdb = '/Volumes/Evan_disk/Speech_data_set/musdb18/' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
+path_to_train_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/train_lyrics/'
+path_to_test_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/test_lyrics/'
+path_to_save_data = '/Volumes/Evan_disk/Speech_data_set/musdb_with_lyrics'
 
-path_to_musdb = 'E:/Speech_data_set/musdb18' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
-path_to_train_lyrics = 'E:/Speech_data_set/musdb18/train_lyrics/'
-path_to_test_lyrics = 'E:/Speech_data_set/musdb18/test_lyrics/'
-path_to_save_data = 'E:/Speech_data_set/musdb_with_lyrics'
+# path_to_musdb = 'E:/Speech_data_set/musdb18' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
+# path_to_train_lyrics = 'E:/Speech_data_set/musdb18/train_lyrics/'
+# path_to_test_lyrics = 'E:/Speech_data_set/musdb18/test_lyrics/'
+# path_to_save_data = 'E:/Speech_data_set/musdb_with_lyrics'
 
 pickle_in = open('./dicts/char2idx.pickle', 'rb')
 char2idx = pickle.load(pickle_in)
