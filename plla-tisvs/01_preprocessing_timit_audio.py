@@ -7,12 +7,13 @@ import timit_utils as tu
 import os
 
 # insert the path to your TIMIT corpus here
-corpus = tu.Corpus('../Datasets/TIMIT/TIMIT/TIMIT')
+corpus_path = "/Volumes/Evan_disk/Speech_data_set/timit/data/"
+corpus = tu.Corpus(corpus_path)
 
 timit_training_set = corpus.train
 timit_test_set = corpus.test
 
-path_for_saving_audio = '../Datasets/TIMIT/TIMIT_torch'
+path_for_saving_audio = '/Volumes/Evan_disk/Speech_data_set/timit_torch'
 
 
 def get_timit_train_sentence(idx):

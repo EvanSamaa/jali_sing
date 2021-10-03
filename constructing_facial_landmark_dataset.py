@@ -142,7 +142,6 @@ if __name__ == "__main__":
             plt.show(block=False)
             plt.pause(0.01)
             plt.close()
-
             # annotate the image
             annotated_image = image.copy()
             for face_landmarks in results.multi_face_landmarks:
