@@ -13,8 +13,10 @@ import pickle
 import sys
 
 # insert path to your TIMIT corpus here
-corpus = tu.Corpus('../Datasets/TIMIT/TIMIT/TIMIT')
+corpus_path = "/Volumes/Evan_disk/Speech_data_set/timit/data/"
+corpus = tu.Corpus(corpus_path)
 
+path_for_saving_text_cmu_phone_files = '/Volumes/Evan_disk/Speech_data_set/cmu_phoneme_sequences_idx_open_unmix/'
 timit_training_set = corpus.train
 timit_test_set = corpus.test
 
@@ -70,7 +72,7 @@ def get_timit_test_sentence(idx):
 pickle_in = open('dicts/timit_word2cmu_phonemes.pickle', 'rb')
 timit_word2cmu_phonemes = pickle.load(pickle_in)
 
-path_for_saving_text_cmu_phone_files = '../Datasets/TIMIT/cmu_phoneme_sequences_idx_open_unmix/'
+# path_for_saving_text_cmu_phone_files = '../Datasets/TIMIT/cmu_phoneme_sequences_idx_open_unmix/'
 
 # #: padding, $: silence, >: space, %: random sound, -: silence (no lyrics)
 cmu_vocabulary = ['#', '$', '%', '>', '-', 'AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'B', 'CH', 'D', 'DH', 'EH', 'ER', 'EY', 'F', 'G',
