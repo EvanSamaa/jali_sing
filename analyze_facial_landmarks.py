@@ -14,16 +14,10 @@ def display_landmark(landmark_arr, fps):
         plt.pause(0.001)
         plt.close()
 def simplify_media_pipe_landmarks(face_arr):
-    # the array should be a 3d array with [timestamp, number of points, number of dimensions (2 or 3)]
-    # the input naming convention should follow the open_CV convention
-
+    return 0
 
 
 if __name__ == "__main__":
-
-
-
-
 
     input_videos = ["high vowels.mp4", "low vowels.mp4", "medium vowels.mp4"]
     input_dir = "F:/vowel_in_different_pitch"
