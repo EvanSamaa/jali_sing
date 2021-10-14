@@ -73,3 +73,16 @@ def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=
                 count += 1
     print("video to image conversion done")
     return frames
+
+def align2clips(clip1, clip2):
+    # clip1 should be the shorter clip
+    diff = clip2.shape[0] - clip1.shape[0]
+    min_val = np.inf
+    min_index = -1
+    for i in range(0, diff):
+        temp_aligned_clip2 = clip2[i:i + clip1.shape[0]]
+        val = np.linalg.norm(temp_aligned_clip2 - clip1)
+        if val <= min_val:
+            min_val = val
+            min_index = i
+    return clip2[min_index:min_index + clip1.shape[0]]
