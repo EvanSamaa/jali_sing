@@ -291,8 +291,8 @@ if __name__ == "__main__":
     show_normalized_pts = False
     tolerance = 0.01
 
-    video_title = ["rolling_in_the_deep_2_jali_more_alignment_fixes.mp4"]
-    video_path = ["C:\\Users\\evansamaa\\Desktop\\Jali_Experiments\\ten_videos\\rolling_in_the_deep"]
+    video_title = ["Child_in_time_1.mp4"]
+    video_path = ["E:\\ten_videos\\Child_in_time"]
 
     extract_landmarks_media_pipe(video_title[0],
                              video_path[0], save_annotated_video=True)
