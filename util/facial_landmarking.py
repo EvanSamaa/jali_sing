@@ -175,7 +175,7 @@ def extract_landmarks_opencv(input_video, input_dir, show_annotated_video = Fals
 
     output_path = os.path.join(os.path.join(input_dir, input_video[:-4]), "cv_landmark.npy")
     # preparation of the models
-    predictor = dlib.shape_predictor("util/shape_predictor_68_face_landmarks_GTX.dat")
+    predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks_GTX.dat")
     detector = dlib.get_frontal_face_detector()
     # split video into images for the pipeline
     img_list = split_video_to_images(input_video,
