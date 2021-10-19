@@ -10,6 +10,7 @@ class MusicScript():
         self.current_index = 0
     def update(self, dt):
         self.t = self.t + dt
+        pass
     def get_current_phoneme(self):
 
     def get_next_phoneme(self):

@@ -42,7 +42,7 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
         return output_path
 
     IMAGE_FILES = split_video_to_images(input_video,
-                                        input_dir)
+                                        input_dir,)
 
     with open(os.path.join(input_dir, input_video[:-4] + "/other_info.json")) as json_file:
         metadata = json.load(json_file)
@@ -291,8 +291,8 @@ if __name__ == "__main__":
     show_normalized_pts = False
     tolerance = 0.01
 
-    video_title = ["child_in_time_1_Jali_raw.mp4"]
-    video_path = ["/Volumes/EVAN_DISK/ten_videos/Child_in_time"]
+    video_title = ["Child_in_time_2.mp4"]
+    video_path = ["E:/ten_videos/Child_in_time"]
 
     extract_landmarks_media_pipe(video_title[0],
                              video_path[0], save_annotated_video=True)

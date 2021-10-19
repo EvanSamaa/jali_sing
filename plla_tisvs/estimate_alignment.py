@@ -219,7 +219,6 @@ if __name__ == '__main__':
     phoneme_onsets = compute_phoneme_onsets(optimal_path_scores, hop_length=nhop, sampling_rate=samplerate)
 
     np.save(os.path.join(path_to_save_alignment, name + '_onsets'), np.array(phoneme_onsets))
-    A[2]
     ############################## running model ##############################
     if test_set[:3] == 'NUS':
         # phoneme level alignment

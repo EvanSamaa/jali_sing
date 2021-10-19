@@ -5,11 +5,15 @@ import numpy as np
 from scipy.signal import decimate
 import torch
 import json
-from .estimate_alignment import optimal_alignment_path, compute_phoneme_onsets
 from . import testx
+from .estimate_alignment import optimal_alignment_path
+from .estimate_alignment import compute_phoneme_onsets
+import librosa
+from scipy.io import wavfile
 
 class Custom_data_set():
     def __init__(self, dict_path, phoneme_dict_path):
+        # build dictionary to transformed between phoneme to the indexes used in the paper
         cmu_vocabulary = ['#', '$', '%', '>', '-', 'AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'B', 'CH', 'D', 'DH', 'EH', 'ER',
                       'EY', 'F', 'G',
                       'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG', 'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH',
@@ -36,28 +40,42 @@ class Custom_data_set():
         transcript = transcript.replace("\n", " ")
         transcript = transcript.replace(",", "")
         transcript = transcript.replace(".", "")
-
+        phoneme_list_full = []
+        word_list = []
         for word in transcript.split():
             phonemes = self.word2phoneme_dict[word.lower()]
+            word_list.append(word.lower())
             for phoneme in phonemes.split():
                 phoneme_list.append(self.symbol2phoneme_dict[phoneme])
+                phoneme_list_full.append(">")
+                phoneme_list_full.append(phoneme)
                 phoneme_list.append(">")
+            phoneme_list_full.append("EOW")
         phoneme_list = phoneme_list[:-1]
         phoneme_idx = np.array([self.cmu_phoneme2idx[p] for p in phoneme_list])
         phoneme_idx = np.pad(phoneme_idx, (1, 1), mode='constant', constant_values=1)
         phoneme_idx_torch = torch.from_numpy(phoneme_idx)
 
         # load the audio file into a readable format for the model
-        sound_object = parselmouth.Sound(audio_path)
-        sound = sound_object.values
-        fps = sound_object.sampling_frequency
-        sound = decimate(sound, int(fps / 16000))
-        print(sound.shape)
-        sound_torch = torch.from_numpy(sound.copy()).type(torch.float32)
+        if audio_path[-3:] != "wav":
+            print("The file needs to be a wav file for this to work. Try again!")
+            raise TypeError
+        # resample if neede
 
+        sound_object = parselmouth.Sound(audio_path)
+        data = sound_object.values
+        sound = []
+        samplerate = sound_object.sampling_frequency
+        for k in range(0, data.shape[0]):
+            sound.append(librosa.resample(data[k, :], samplerate, 16000))
+        # sound = decimate(sound, int(fps / 16000))
+        sound = np.array(sound)
+        sound = (sound - sound.mean() )/sound.std() * 0.05
+
+        sound_torch = torch.from_numpy(sound.copy()).type(torch.float32)
         sound_torch_out = sound_torch.unsqueeze(dim=0)
         phoneme_idx_out = phoneme_idx_torch.unsqueeze(dim=0)
-        return sound_torch_out, phoneme_idx_out
+        return sound_torch_out, phoneme_idx_out, phoneme_list_full, word_list
     def get_phonemes(self, idx_list):
         # input should be an 1D array of indexes, it will be turned into a list of phonemes
         out = []
@@ -65,16 +83,17 @@ class Custom_data_set():
             out.append(self.cmu_idx2phoneme[int(idx_list[i].item())])
         return out
 if __name__ == "__main__":
+
+
     dict_path = "./dicts"
     phoneme_dict_path = "cmu_word2cmu_phoneme_extra.pickle"
-    audio_paths = ["/Volumes/EVAN_DISK/ten_videos/Child_in_time/Child_in_time_1/audio.wav"]
-    transcript_paths = ["/Volumes/EVAN_DISK/ten_videos/Child_in_time/Child_in_time_1/audio.txt"]
+    audio_paths = ["/Volumes/EVAN_DISK/ten_videos/I_dont_love_you/I_dont_love_you_short/audio.wav"]
+    transcript_paths = ["/Volumes/EVAN_DISK/ten_videos/I_dont_love_you/I_dont_love_you_short/audio.txt"]
 
     data_parser = Custom_data_set(dict_path, phoneme_dict_path)
-    audio, phoneme_idx = data_parser.parse(audio_paths[0], transcript_paths[0])
-
+    audio, phoneme_idx, phoneme_list_full, word_list = data_parser.parse(audio_paths[0], transcript_paths[0])
+    print(phoneme_idx.size)
     # load model
-
     model_path = 'trained_models/{}'.format("JOINT3")
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = 'cpu'

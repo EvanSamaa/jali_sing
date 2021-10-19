@@ -73,7 +73,6 @@ def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=
                 count += 1
     print("video to image conversion done")
     return frames
-
 def align2clips(clip1, clip2):
     # clip1 should be the shorter clip
     diff = clip2.shape[0] - clip1.shape[0]
