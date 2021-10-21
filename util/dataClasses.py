@@ -12,7 +12,7 @@ class MusicScript():
         self.t = self.t + dt
         pass
     def get_current_phoneme(self):
-
+        pass
     def get_next_phoneme(self):
         pass
     def get_prev_phoneme(self):
