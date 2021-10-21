@@ -2,7 +2,7 @@ import librosa
 import os
 import math
 import time
-import winsound
+# import winsound
 import textgrids
 import parselmouth
 from scipy.signal import savgol_filter, correlate
@@ -171,7 +171,7 @@ class PraatScriptWrapper():
         new_grid.xmin = 0
         new_grid.xmax = self.pitch.xs()[-1]
         if len(self.phoneme_list) > 0:
-            new_grid["phones"] = []
+            new_grid["phones"] = textgrids.Tier()
             for i in range(1, len(self.phoneme_onsets) - 1):
                 phoneme = self.phoneme_list[i]
                 if phoneme == ">":
@@ -179,12 +179,12 @@ class PraatScriptWrapper():
                 interval = textgrids.Interval(phoneme, self.phoneme_onsets[i], self.phoneme_onsets[i + 1])
                 new_grid["phones"].append(interval)
         if len(self.word_list) > 0:
-            new_grid["words"] = []
+            new_grid["words"] = textgrids.Tier()
             for i in range(0, len(self.word_list)):
                 interval = textgrids.Interval(self.word_list[i], self.word_durations[i][0], self.word_durations[i][1])
                 new_grid["words"].append(interval)
         if len(self.vibrato_intervals) > 0:
-            new_grid["vibrato"] = []
+            new_grid["vibrato"] = textgrids.Tier()
             for i in range(0, len(self.vibrato_intervals)):
                 interval = textgrids.Interval("vibrato", self.vibrato_intervals[i][0], self.vibrato_intervals[i][1])
                 new_grid["vibrato"].append(interval)
@@ -199,9 +199,10 @@ def format_conversion_m4a2wav(file_name: str):
     return 0
 
 if __name__ == "__main__":
-    pw = PraatScriptWrapper("E:/ten_videos/Child_in_time/Child_in_time_2/audio.mp3")
+    pw = PraatScriptWrapper("/Volumes/EVAN_DISK/ten_videos/Child_in_time/Child_in_time_2/audio.mp3")
     pw.compute_self_vibrato()
-    pw.write_praat_script("E:/ten_videos/Child_in_time/Child_in_time_2/", "vibrato")
+    pw.write_praat_script("/Volumes/EVAN_DISK/ten_videos/Child_in_time/Child_in_time_2/", "vibrato")
+
 
 
 
