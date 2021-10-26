@@ -3,7 +3,8 @@ import os
 import shutil
 import moviepy.editor as ed
 import json
-
+import librosa
+from scipy.io.wavfile import write
 class VideoWriter():
     def __init__(self, opath, fps=25):
         # I don't think this would work with mp4 output, it probably only works with avi
@@ -73,6 +74,32 @@ def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=
                 count += 1
     print("video to image conversion done")
     return frames
+def get_wav_from_video(file_name, video_folder_path):
+    dir_files = os.listdir(video_folder_path)
+    if len(dir_files) == 0:
+        print("The directory is empty")
+        return []
+    for video in os.listdir(video_folder_path):
+        # print(video)
+        if video == file_name:
+            video_path = os.path.join(video_folder_path, video)
+            my_clip = ed.VideoFileClip(video_path)
+            my_clip.audio.write_audiofile(video_path[:-3] + "wav")
+    return video_path[:-3] + "wav"
+
+def mp32wav(file_name, audio_folder_path):
+    dir_files = os.listdir(audio_folder_path)
+    if len(dir_files) == 0:
+        print("The directory is empty")
+        return []
+    for audio in os.listdir(audio_folder_path):
+        if audio == file_name:
+            video_path = os.path.join(audio_folder_path, audio)
+            music, sr = librosa.load(os.path.join(audio_folder_path, audio))
+            # librosa.output.write_wav(video_path[:-3] + "wav", music)
+            # music.write(video_path[:-3] + "wav")
+            write(video_path[:-3] + "wav", sr, music)
+
 def align2clips(clip1, clip2):
     # clip1 should be the shorter clip
     diff = clip2.shape[0] - clip1.shape[0]
@@ -85,3 +112,11 @@ def align2clips(clip1, clip2):
             min_val = val
             min_index = i
     return clip2[min_index:min_index + clip1.shape[0]]
+if __name__ == "__main__":
+    get_wav_from_video("video_raw.mp4", "E:/Structured_data/cry_me_a_river_ella_fitzgerald")
+    # get_wav_from_video("Male_falsetto.mp4", "E:/alignment_test/falsetto")
+    # music, sr = librosa.load("E:/Structured_data/cry_me_a_river_ella_fitzgerald" + "/audio_raw.mp3")
+    # print(music.shape)
+    # music, sr = librosa.load("E:/Structured_data/cry_me_a_river_ella_fitzgerald" + "/audio_raw.wav")
+    # print(music.shape)
+    # mp32wav("audio_raw.mp3", "E:/Structured_data/cry_me_a_river_ella_fitzgerald")

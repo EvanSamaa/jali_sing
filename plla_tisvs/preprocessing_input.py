@@ -68,9 +68,8 @@ class Custom_data_set():
         samplerate = sound_object.sampling_frequency
         for k in range(0, data.shape[0]):
             sound.append(librosa.resample(data[k, :], samplerate, 16000))
-        # sound = decimate(sound, int(fps / 16000))
         sound = np.array(sound)
-        sound = (sound - sound.mean() )/sound.std() * 0.05
+        sound = (sound - sound.mean() )/sound.std() * 0.06
 
         sound_torch = torch.from_numpy(sound.copy()).type(torch.float32)
         sound_torch_out = sound_torch.unsqueeze(dim=0)
