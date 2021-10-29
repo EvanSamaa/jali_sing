@@ -5,7 +5,8 @@ import time
 # import winsound
 import textgrids
 import parselmouth
-from scipy.signal import savgol_filter, correlate
+from scipy.signal import savgol_filter, correlate, convolve
+from scipy.signal.windows import gaussian
 from scipy.interpolate import interp1d
 import numpy as np
 import torch
@@ -14,6 +15,7 @@ import plla_tisvs.testx as testx
 from plla_tisvs.estimate_alignment import optimal_alignment_path, compute_phoneme_onsets
 import json
 import re
+from util.pitch_interval_estimation import *
 
 
 NOTES_NAME = ["A", "A#", "B", "C", "C#", "D",
@@ -29,7 +31,7 @@ ALTO = ["G3", "E5"]
 TENOR = ["C3", "A4"]
 BARITONE = ["A2", "F4"]
 BASS = ["F2", "E4"]
-VOWELS = set(['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW', "ER"])
+VOWELS = set(['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW', "ER", "N"])
 
 VOCAL_RANGES = [BASS, BARITONE, TENOR, ALTO, MEZZO_SOPRANO, SOPRANO]
 VOCAL_RANGES_VAL = [[87.30705785825097, 329.62755691287],
@@ -129,6 +131,10 @@ class PraatScript_Lyric_Wrapper():
         self.word_list = []
         self.word_intervals = []
 
+        # list for storing pitch related details
+        self.pitch_slopes = []
+        self.pitch_intervals = []
+
         # if these parameters are non-empty then they are called to add to the thing
         for item in sentence_textgrids_path:
             phoneme_list, phoneme_intervals, word_list, word_intervals = self.load_phoneme_textgrid(item)
@@ -141,7 +147,6 @@ class PraatScript_Lyric_Wrapper():
             self.phoneme_intervals.extend(item.phoneme_intervals)
             self.word_list.extend(item.word_list)
             self.word_intervals.extend(item.word_intervals)
-
     def compute_self_vibrato_intervals(self):
         if len(self.vibrato_intervals) == 0:
             strength = self.pitch.selected_array["strength"]
@@ -228,12 +233,42 @@ class PraatScript_Lyric_Wrapper():
                     distance = current_distance
         return vibrato_intervals
     def compute_self_pitch_intervals(self):
+        sigma = 10
+        window_short = 1/np.sqrt(np.pi * 2) / sigma * gaussian(sigma * 2, sigma)
+        window = 1/np.sqrt(np.pi * 2) / sigma * gaussian(sigma * 4, sigma)
         if len(self.phoneme_list) <= 0:
             self.compute_self_phoneme_alignment()
-        # TODO: add this in later
+        freq = self.pitch.selected_array["frequency"]
+        xs = self.pitch.xs()
+        sub_intervals = self.__get_subarrays_indexes_from_time_interval(self.phoneme_intervals, xs)
+        freq[freq == 0] = np.nan
+        mask = np.isnan(freq)
+        freq[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), freq[~mask])
+        # use interpolation to deal with missing value in the pitch prediction
+        f = interp1d(xs, freq, kind="linear")
+
+        for i in range(0, len(sub_intervals)):
+            interval = sub_intervals[i]
+            phone = self.phoneme_list[i]
+            pitch_feature_per_vowel = []
+            pitch_feature_intervals_per_vowel = []
+            if phone in VOWELS:
+                interval_length = xs[interval[1]] - xs[interval[0]]
+                if interval_length <= 0.4:
+                    pitch_feature_per_vowel.append(0)
+                    pitch_feature_intervals_per_vowel.append([xs[interval[0]], xs[interval[1]]])
+                else:
+                    xs_interval = xs[interval[0]:interval[1]]
+                    freq_interval = f(xs_interval)
+                    padded_freq_interval = np.pad(freq_interval, [sigma * 2, sigma * 2], mode="constant", constant_values=[
+                        freq_interval[:sigma * 2].mean(), freq_interval[sigma:].mean()])
+                    smoothed_freq = convolve(padded_freq_interval, window, mode="same")[sigma * 2:-sigma * 2]
+                    pitch_feature_per_vowel, pitch_feature_intervals_per_vowel = efficient_piece_wise_linear_intervals(xs_interval, smoothed_freq)
+                    pitch_feature_intervals_per_vowel = [[xs_interval[val[0]], xs_interval[val[1]]] for val in pitch_feature_intervals_per_vowel]
+            self.pitch_intervals.append(pitch_feature_intervals_per_vowel)
+            self.pitch_slopes.append(pitch_feature_per_vowel)
     def compute_self_singing_style_intervals(self):
         freq = self.pitch.selected_array["frequency"]
-        #
         if len(self.phoneme_list) <= 0:
             self.compute_self_phoneme_alignment()
         self.voice_quality_intervals, self.voice_quality_lists = self.compute_singing_style_intervals(self.snd, self.dt, self.phoneme_list, self.phoneme_intervals)
@@ -265,7 +300,6 @@ class PraatScript_Lyric_Wrapper():
         # get location of passagio
         q = np.nanpercentile(frequency, [2, 98])
         passagio = q[0] + 0.5 * (q[1] - q[0])
-
         for i in range(0, len(phoneme_intervals)):
             # for item in phoneme_alignment["phones"]:
             if phone_list[i] in VOWELS:
@@ -273,13 +307,15 @@ class PraatScript_Lyric_Wrapper():
 
 
                 H2_F1_i = f(vowel_span)
-
-                voice_quality_intervals.append([phoneme_intervals[i][0], min(phoneme_intervals[i][1], xs[-1])])
                 if frequency[:smooth_formant_arr.shape[0]].mean() >= passagio:
+                    voice_quality_intervals.append([phoneme_intervals[i][0], min(phoneme_intervals[i][1], xs[-1])])
                     if H2_F1_i.mean() <= 100:
                         voice_quality_lists.append("belt")
                     else:
                         voice_quality_lists.append("head")
+                else:
+                    voice_quality_intervals.append([phoneme_intervals[i][0], min(phoneme_intervals[i][1], xs[-1])])
+                    voice_quality_lists.append("chest")
         return voice_quality_intervals, voice_quality_lists
     def compute_word_alignment(self, phoneme_onsets, phoneme_list_full):
         word_durations = []
@@ -449,6 +485,15 @@ class PraatScript_Lyric_Wrapper():
                 for vib_interval in self.vibrato_intervals[i]:
                     interval = textgrids.Interval("vibrato", vib_interval[0], vib_interval[1])
                     new_grid["vibrato"].append(interval)
+
+        if len(self.pitch_slopes) > 0:
+            new_grid["pitch_feature"] = textgrids.Tier()
+            for i in range(0, len(self.pitch_slopes)):
+                for j in range(0, len(self.pitch_intervals[i])):
+                    pitch_interval = self.pitch_intervals[i][j]
+                    interval = textgrids.Interval(int(self.pitch_slopes[i][j]), pitch_interval[0], pitch_interval[1])
+                    new_grid["pitch_feature"].append(interval)
+
         if len(self.voice_quality_intervals) > 0:
             new_grid["voice_quality"] = textgrids.Tier()
             for i in range(0, len(self.voice_quality_intervals)):
@@ -491,16 +536,13 @@ def format_conversion_m4a2wav(file_name: str):
     os.remove(filename.format("m4a"))
     return 0
 def create_lyric_alignment_textgrids(dir, file_name_template):
-
-
-
     # break the lyric file into individual sentences files, using "\n" to seperate sentences
     # this is expected to match the voice clips
     sub_audio_location = os.path.join(dir, "temp")
 
     # check if there are already textGrid files, cause error if it's non-empty
     existing_files = [f for f in os.listdir(sub_audio_location) if re.match(r'\S*.TextGrid', f)]
-    if len(existing_files > 0):
+    if len(existing_files) > 0:
         print("There are already alignment files at target location tion in the ./temp directory. \n"
               "please either remove them if you wish to compute alignment again.")
         return
@@ -546,14 +588,31 @@ def combine_lyric_alignment_textgrids(dir, file_name_template):
                                            sentence_textgrids_path=textgrid_files)
     return output_obj
 if __name__ == "__main__":
+    dir = "E:/Structured_data/my_way_frank_sinatra"
+    file_name_template = "audio_1"
+    # create_lyric_alignment_textgrids(dir, file_name_template)
+
+    lyric = combine_lyric_alignment_textgrids(dir, file_name_template)
+    lyric.compute_self_vibrato_intervals()
+    lyric.compute_self_pitch_intervals()
+    lyric.compute_self_singing_style_intervals()
+    print(len(lyric.voice_quality_lists), lyric.voice_quality_lists)
+    print(len(lyric.voice_quality_intervals), lyric.voice_quality_intervals)
+    lyric.write_textgrid(dir, file_name_template + "_full")
+    A[2]
+
     # input (at the point the sentence alignment should be done already)
     # the lyrics should also be prepared in files
     dir = "E:/Structured_data/rolling_in_the_deep_adele"
     file_name_template = "audio"
-    lyric = combine_lyric_alignment_textgrids(dir, file_name_template)
-    lyric.compute_self_vibrato_intervals()
-    lyric.compute_self_singing_style_intervals()
-    lyric.write_textgrid(dir, file_name_template + "_full")
+    lyric = PraatScript_Lyric_Wrapper(os.path.join(dir, file_name_template+".wav"), os.path.join(dir, file_name_template+".txt"))
+    lyric.compute_self_phoneme_alignment()
+    lyric.write_textgrid(dir, file_name_template+"kilian_raw")
+    # lyric = combine_lyric_alignment_textgrids(dir, file_name_template)
+    # lyric.compute_self_vibrato_intervals()
+    # lyric.compute_self_pitch_intervals()
+    # lyric.compute_self_singing_style_intervals()
+    # lyric.write_textgrid(dir, file_name_template + "_full")
 
 
 
