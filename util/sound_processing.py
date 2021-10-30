@@ -268,7 +268,6 @@ class PraatScript_Lyric_Wrapper():
             self.pitch_intervals.append(pitch_feature_intervals_per_vowel)
             self.pitch_slopes.append(pitch_feature_per_vowel)
     def compute_self_singing_style_intervals(self):
-        freq = self.pitch.selected_array["frequency"]
         if len(self.phoneme_list) <= 0:
             self.compute_self_phoneme_alignment()
         self.voice_quality_intervals, self.voice_quality_lists = self.compute_singing_style_intervals(self.snd, self.dt, self.phoneme_list, self.phoneme_intervals)
@@ -304,8 +303,6 @@ class PraatScript_Lyric_Wrapper():
             # for item in phoneme_alignment["phones"]:
             if phone_list[i] in VOWELS:
                 vowel_span = np.arange(phoneme_intervals[i][0], min(phoneme_intervals[i][1], xs[-1]), dt)
-
-
                 H2_F1_i = f(vowel_span)
                 if frequency[:smooth_formant_arr.shape[0]].mean() >= passagio:
                     voice_quality_intervals.append([phoneme_intervals[i][0], min(phoneme_intervals[i][1], xs[-1])])
