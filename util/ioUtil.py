@@ -21,6 +21,38 @@ class VideoWriter():
         for i in range(len(self.img_array)):
             out.write(self.img_array[i])
         out.release()
+
+def get_audio_from_video(file_name, video_folder_path, target_fps = 30, remove=False):
+    dir_files = os.listdir(video_folder_path)
+    if len(dir_files) == 0:
+        print("The directory is empty")
+        return []
+    video_path = os.path.join(video_folder_path, file_name)
+    video_folder = os.path.join(video_folder_path, file_name[:-4])
+    try:
+        # print(video_folder)
+        os.mkdir(video_folder)
+    except:
+        if remove:
+            shutil.rmtree(video_folder, ignore_errors=True)
+            os.mkdir(video_folder)
+        else:
+            return
+    my_clip = ed.VideoFileClip(video_path)
+    my_clip.audio.write_audiofile(os.path.join(video_folder, "audio.mp3"))
+    vidcap = cv2.VideoCapture(video_path)
+    fps = vidcap.get(cv2.CAP_PROP_FPS)
+    meta_data = {}
+    if fps <= target_fps:
+        meta_data["fps"] = fps
+    else:
+        factor = fps / target_fps
+    meta_data["fps"] = fps
+    meta_data["video_path"] = video_path
+    meta_data["audio_path"] = os.path.join(video_folder, "audio.mp3")
+    with open(os.path.join(video_folder, "other_info.json"), 'w') as outfile:
+        json.dump(meta_data, outfile)
+
 def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=False):
     # filename can just be the name of the file,
     # the video must be in the video folder_path
@@ -86,7 +118,6 @@ def get_wav_from_video(file_name, video_folder_path):
             my_clip = ed.VideoFileClip(video_path)
             my_clip.audio.write_audiofile(video_path[:-3] + "wav")
     return video_path[:-3] + "wav"
-
 def mp32wav(file_name, audio_folder_path):
     dir_files = os.listdir(audio_folder_path)
     if len(dir_files) == 0:
@@ -99,7 +130,6 @@ def mp32wav(file_name, audio_folder_path):
             # librosa.output.write_wav(video_path[:-3] + "wav", music)
             # music.write(video_path[:-3] + "wav")
             write(video_path[:-3] + "wav", sr, music)
-
 def align2clips(clip1, clip2):
     # clip1 should be the shorter clip
     diff = clip2.shape[0] - clip1.shape[0]

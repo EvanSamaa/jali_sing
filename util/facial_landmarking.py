@@ -37,12 +37,17 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
 
     drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 
-    output_path = os.path.join(os.path.join(input_dir, input_video[:-4]), "mediapipe_landmark.npy")
-    if os.path.exists(output_path):
-        return output_path
+    output_path = os.path.join(os.path.join(input_dir, input_video[:-4]), "2D_mediapipe_landmark.npy")
+    raw_output_path = os.path.join(os.path.join(input_dir, input_video[:-4]), "raw_mediapipe_landmark.npy")
+    # if os.path.exists(output_path):
+    #     return output_path
 
-    IMAGE_FILES = split_video_to_images(input_video,
-                                        input_dir,)
+    get_audio_from_video(input_video, input_dir,)
+
+    # set up cv2 object for querying images from video
+    cap = cv2.VideoCapture(os.path.join(os.path.join(input_dir, input_video)))
+    count = 0
+
 
     with open(os.path.join(input_dir, input_video[:-4] + "/other_info.json")) as json_file:
         metadata = json.load(json_file)
@@ -51,23 +56,25 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
         vr = VideoWriter(os.path.join(input_dir, input_video[:-4] + "mediapipe_labeled.avi"), fps=fps)
 
     landmark_output = []
+    raw_landmark_output = []
     with mp_face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
             min_detection_confidence=0.5) as face_mesh:
-        imgs_arr = []
-
-        pbar = tqdm(total=len(IMAGE_FILES))
-        for idx, file in enumerate(IMAGE_FILES):
-            image = cv2.imread(file)
+        pbar = tqdm(total=cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # for idx, file in enumerate(IMAGE_FILES):
+        while cap.isOpened():
+            ret, image = cap.read()
+            if not ret:
+                break
             # Convert the BGR image to RGB before processing.
             results = face_mesh.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             # Print and draw face mesh landmarks on the image.
             if not results.multi_face_landmarks:
+                landmark_output.append(np.zeros((468, 2)))
+                raw_landmark_output.append(np.zeros((468, 3)))
                 continue
-
             # https://github.com/ManuelTS/augmentedFaceMeshIndices/blob/master/Nose.jpg points of the face model
-
             # print(results.multi_face_landmarks)
             face_landmarks = results.multi_face_landmarks[0].landmark
             land_mark_matrix_pts = np.zeros((468, 3))
@@ -75,6 +82,7 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
                 land_mark_matrix_pts[i, 0] = face_landmarks[i].x
                 land_mark_matrix_pts[i, 1] = face_landmarks[i].y
                 land_mark_matrix_pts[i, 2] = face_landmarks[i].z
+
             plane_pts = [land_mark_matrix_pts[98], land_mark_matrix_pts[327], land_mark_matrix_pts[168]]
             # rotate the projected matrix to face the camerra
             n = np.cross(plane_pts[2] - plane_pts[1], plane_pts[0] - plane_pts[1])
@@ -102,9 +110,9 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
                     theta = - theta
                     r = np.array(((np.cos(theta), -np.sin(theta)),
                                   (np.sin(theta), np.cos(theta))))
-
             normalized_landmark = np.expand_dims(r, axis=0) @ np.expand_dims(projected_land_marks, axis=2)
             landmark_output.append(normalized_landmark[:, :, 0])
+            raw_landmark_output.append(land_mark_matrix_pts)
             if show_normalized_pts:
                 # plt.subplot(2,1,1)
                 plt.scatter(normalized_landmark[:, 0], normalized_landmark[:, 1])
@@ -146,6 +154,8 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
         if save_annotated_video:
             vr.save()
         landmark_output = np.array(landmark_output)
+        raw_landmark_output = np.array(raw_landmark_output)
+        np.save(raw_output_path, raw_landmark_output)
         np.save(output_path, landmark_output)
         return output_path
 def normalize_open_cv_face(facearr, h, w, tolerance):
@@ -281,21 +291,16 @@ def extract_landmark_media_pipe_single_image(file_path):
         return landmark_output
 
 if __name__ == "__main__":
-    # IMAGE_FILES = split_video_to_images("original_clip.mov",
-    #                                     "C:\\Users\\evansamaa\\Desktop\\Jali_Experiments\\zombie\\videos")
-    # input_video = "zombie_part.mp4"
-    # input_dir = "/Users/evansamaa/Desktop/jali_sing_exp/zombie/"
-    # landmark_output = np.zeros((1,2))
-    # np.save(os.path.join(os.path.join(input_dir, input_video[:-4]), "landmark.npy"), landmark_output)
+
     show_annotated_video = False
     show_normalized_pts = False
     tolerance = 0.01
 
-    video_title = ["Child_in_time_2.mp4"]
-    video_path = ["E:/ten_videos/Child_in_time"]
-
-    extract_landmarks_media_pipe(video_title[0],
-                             video_path[0], save_annotated_video=True)
+    video_title = ["video.mp4", "video.mp4", "video.mp4", "video.mp4", "video.mp4"]
+    video_path = ["E:/facial_data_analysis_videos/1", "E:/facial_data_analysis_videos/2", "E:/facial_data_analysis_videos/3", "E:/facial_data_analysis_videos/4", "E:/facial_data_analysis_videos/5"]
+    for i in range(0, 5):
+        extract_landmarks_media_pipe(video_title[i],
+                                 video_path[i], save_annotated_video=False)
     # extract_landmarks_opencv(video_title[0],
     #                          video_path[0], save_annotated_video=True)
 
