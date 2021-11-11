@@ -39,7 +39,12 @@ class Custom_data_set():
         # replace useless symbols
         transcript = transcript.replace("\n", " ")
         transcript = transcript.replace(",", "")
+        transcript = transcript.replace("?", "")
         transcript = transcript.replace(".", "")
+        transcript = transcript.replace("(", "")
+        transcript = transcript.replace(")", "")
+        transcript = transcript.replace("-", " ")
+
         phoneme_list_full = []
         word_list = []
         for word in transcript.split():

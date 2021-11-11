@@ -10,11 +10,49 @@ JALI_SLIDERS_SET = set.union(VOWELS_JALI, CONSONANTS_JALI, CONSONANTS_NOJAW_JALI
 
 for item in list(JALI_SLIDERS_SET):
     cmds.cutKey(item, clear=True)
-viseme_lists = data["visemes"][0]
-viseme_intervals = data["visemes"][1]
+viseme_lists = data["viseme"][0]
+viseme_intervals = data["viseme"][1]
+ja_pts = data["jaw"]
+li_pts = data["lip"]
+vib_intervals = data["vib"]
+
 fps=24
 for i in range(0, len(viseme_lists)):
     viseme_slider = viseme_lists[i]
     attribute = "ty"
     for pt in viseme_intervals[i]:
         cmds.setKeyframe(viseme_slider, at=attribute, v=pt[1], t=pt[0] * fps)
+# get the jaw parameters in
+viseme_slider = "JaliJoystick"
+attribute = "Jaw"
+for i in range(0, len(ja_pts)):
+    cmds.setKeyframe(viseme_slider, at=attribute, v=ja_pts[i][1], t=ja_pts[i][0] * fps)
+attribute = "Lip"
+for i in range(0, len(li_pts)):
+    cmds.setKeyframe(viseme_slider, at=attribute, v=li_pts[i][1], t=li_pts[i][0] * fps)
+
+# get some good jaw brato motion
+slider = "JaliJoystick"
+attribute = "Jaw"
+for i in range(0, len(vib_intervals)):
+    starting_frame = vib_intervals[i][0]*fps
+    ending_frame = vib_intervals[i][1]*fps
+    vibrato_frequency = 5  # the lip will move 5 times per second
+    vibrato_height = 0.2
+
+    vibrato_dire = -1
+    t = starting_frame
+    step_size = int(fps / vibrato_frequency)
+    offsets = []
+    while t <= ending_frame:
+        offset = cmds.getAttr(slider + '.' + attribute, t=t)
+        offsets.append(offset)
+        t = t + step_size
+    t = starting_frame
+    counter = 0
+    while t <= ending_frame:
+        cmds.setKeyframe(slider, at=attribute, v=offsets[counter] + vibrato_height * vibrato_dire, t=t)
+        t = t + step_size
+        vibrato_dire = vibrato_dire * -1
+        counter = counter + 1
+
