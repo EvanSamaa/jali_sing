@@ -43,7 +43,6 @@ def piece_wise_linear_intervals(x, y, E_line=400):
 
     # M is the value matrix, backtrack is the matrix that contains the solution
     return traverse_solution(back_track)
-
 def efficient_piece_wise_linear_intervals(x, y):
     L = 200
     # compute E_line

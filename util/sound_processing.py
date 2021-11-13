@@ -157,6 +157,7 @@ class PraatScript_Lyric_Wrapper():
             self.phoneme_intervals.extend(item.phoneme_intervals)
             self.word_list.extend(item.word_list)
             self.word_intervals.extend(item.word_intervals)
+
     def compute_self_vibrato_intervals(self):
         if len(self.vibrato_intervals) == 0:
             strength = self.pitch.selected_array["strength"]
@@ -316,6 +317,21 @@ class PraatScript_Lyric_Wrapper():
             voice_quality_lists_i = []
             if phone_list[i] in VOWELS:
                 # iterate through the type of pitch intervals
+                if len(self.pitch_slopes[i]) == 0:
+                    vowel_span = np.arange(self.phoneme_intervals[i][0], min(self.phoneme_intervals[i][1], xs[-1]),
+                                           dt)
+                    H2_F1_i = f(vowel_span)
+                    if frequency[:smooth_formant_arr.shape[0]].mean() >= passagio:
+                        voice_quality_intervals_i.append(
+                            [self.phoneme_intervals[i][0], min(self.phoneme_intervals[i][1], xs[-1])])
+                        if H2_F1_i.mean() <= 100:
+                            voice_quality_lists_i.append("belt")
+                        else:
+                            voice_quality_lists_i.append("head")
+                    else:
+                        voice_quality_intervals_i.append(
+                            [self.phoneme_intervals[i][0], min(self.phoneme_intervals[i][1], xs[-1])])
+                        voice_quality_lists_i.append("chest")
                 for j in range(len(self.pitch_slopes[i])):
                     if self.pitch_slopes[i][j] == 0 or True:
                         vowel_span = np.arange(self.pitch_intervals[i][j][0], min(self.pitch_intervals[i][j][1], xs[-1]), dt)
