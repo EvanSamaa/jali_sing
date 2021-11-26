@@ -42,85 +42,36 @@ VOCAL_RANGES_VAL = [[87.30705785825097, 329.62755691287],
                     [261.6255653005986, 440.0]]
 VOCAL_RANGES_NAME = ['BASS', 'BARITONE', 'TENOR', 'ALTO', 'MEZZO_SOPRANO', 'SOPRANO']
 
-
-class Music_note():
-    def __init__(self, t_start, t_end, frequency=None, note=None):
-        if note is None and frequency is None:
-            raise Exception("you must enter either note or frequency")
-        elif note is None:
-            if frequency < 27.50:
-                self.note = "N/A"
-                self.frequency = 27.50
-            else:
-                number = int(math.log2(frequency / LOWEST_NOTE) * 12)
-                octive = math.floor(number / 12)
-                note_id = number % 12
-                self.frequency = LOWEST_NOTE * pow(2, number / 12.0)
-                self.note = NOTES_NAME[note_id] + "{}".format(octive + 1)
-        else:
-            try:
-                octive = int(note[-1]) - 1
-                note_id = NOTES_DICT[note[:-1]]
-                self.frequency = LOWEST_NOTE * pow(2, (octive * 12 + note_id) / 12.0)
-                self.note = note
-            except:
-                self.note = "N/A"
-                self.frequency = 0
-        self.t_start = t_start
-        self.t_end = t_end
-        self.duration = t_end - t_start
-
-    def print(self, freq=None):
-        if freq is None:
-            print("freq = ", self.frequency)
-            print("note = {}".format(self.note))
-        else:
-            number = int(math.log2(freq / LOWEST_NOTE) * 12)
-            octive = math.floor(number / 12)
-            note_id = number % 12
-            print("freq = ", freq)
-            print(NOTES_NAME[note_id] + "{}".format(octive + 1))
-
-    @staticmethod
-    def freq2note(frequency):
-        if frequency < 27.50:
-            return "N/A"
-        else:
-            number = int(math.log2(frequency / LOWEST_NOTE) * 12)
-            octive = math.floor(number / 12)
-            note_id = number % 12
-            return NOTES_NAME[note_id] + "{}".format(octive + 1)
-
-    @staticmethod
-    def note2freq(note):
-        try:
-            octive = int(note[-1]) - 1
-            note_id = NOTES_DICT[note[:-1]]
-            frequency = LOWEST_NOTE * pow(2, (octive * 12 + note_id) / 12.0)
-            return frequency
-        except:
-            return 0
-
-    def play(self):
-        if self.note == "N/A":
-            time.sleep(self.duration)
-        else:
-            winsound.Beep(int(self.frequency), int(self.duration * 1000))
-class PraatScript_Lyric_Wrapper():
-    def __init__(self, audio_path_file, transcript_path = "", sentence_textgrids=[], sentence_textgrids_path=[], pitch_ceiling = 1000):
+class Minimal_song_data_structure():
+    def __init__(self, audio_path_file, transcript_path, txt_grid_path = "", pitch_ceiling = 1000):
         # the audio file should be 44.1kHz for accurate pitch prediction result.
         # the audio file could be a mp3 file
         self.transcript_path = transcript_path
         self.audio_path_file = audio_path_file
+        # set some hyperparameters
         self.pitch_ceiling = pitch_ceiling
         self.dt = 0.01
         self.silence_threshold = 0.007
+        # obtain sound related data using Praat
         self.snd = parselmouth.Sound(audio_path_file)
         self.pitch = self.snd.to_pitch(time_step = self.dt, pitch_ceiling = self.pitch_ceiling)
         self.pitch_arr = self.pitch.selected_array["frequency"]
+        self.pitch_arr[self.pitch_arr == 0] = np.nan
+        mask = np.isnan(self.pitch_arr)
+        self.pitch_arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), self.pitch_arr[~mask])
+        # use interpolation to deal with missing value in the pitch prediction
+        self.pitch_interp = interp1d(self.pitch.xs(), self.pitch_arr)
         self.intensity = self.snd.to_intensity(time_step=self.dt)
         self.intensity_arr = self.intensity.values.T
+        self.intensity_interp = interp1d(self.intensity.xs(), self.intensity_arr[:,0])
+        self.formant = self.snd.to_formant_burg(time_step=self.dt)
+        self.formants_arr = np.zeros((len(self.formant.xs()), 3))
+        for i in range(0, self.formants_arr.shape[0]):
+            for j in range(1, 4):
+                self.formants_arr[i, j - 1] = self.formant.get_value_at_time(j, self.formant.xs()[i])
+        self.F1_interp = interp1d(self.formant.xs(), self.formants_arr[:,0])
         self.xs = self.pitch.xs()
+
         # pre-init variable to store voice qualities such as belting/head voice and etc
         self.voice_quality_intervals = []
         self.voice_quality_lists = []
@@ -143,23 +94,17 @@ class PraatScript_Lyric_Wrapper():
         self.pitch_intervals = []
 
         # if these parameters are non-empty then they are called to add to the thing
-        for item in sentence_textgrids_path:
-            if len(self.phoneme_list) == 0:
-                self.phoneme_list.append("EOS_tag")
-                self.phoneme_intervals.append([0.0, 0.0])
-            else:
-                self.phoneme_list.append("EOS_tag")
-                self.phoneme_intervals.append([phoneme_intervals[-1][1], phoneme_intervals[-1][1]])
-            phoneme_list, phoneme_intervals, word_list, word_intervals = self.load_phoneme_textgrid(item)
-            self.phoneme_list.extend(phoneme_list)
-            self.phoneme_intervals.extend(phoneme_intervals)
-            self.word_list.extend(word_list)
-            self.word_intervals.extend(word_intervals)
-        for item in sentence_textgrids:
-            self.phoneme_list.extend(item.phoneme_list)
-            self.phoneme_intervals.extend(item.phoneme_intervals)
-            self.word_list.extend(item.word_list)
-            self.word_intervals.extend(item.word_intervals)
+        if txt_grid_path != "":
+            self.phoneme_list, self.phoneme_intervals, self.word_list, self.word_intervals = self.load_phoneme_textgrid(txt_grid_path)
+    def get_f_interval(self, interval):
+        ts = np.arange(interval[0], min(interval[1], self.pitch.xs()[-1]), self.dt)
+        return ts, self.pitch_interp(ts)
+    def get_I_interval(self, interval):
+        ts = np.arange(interval[0], min(interval[1], self.intensity.xs()[-1]), self.dt)
+        return ts, self.intensity_interp(ts)
+    def get_F1_interval(self, interval):
+        ts = np.arange(interval[0], min(interval[1], self.formant.xs()[-1]), self.dt)
+        return ts, self.F1_interp(ts)
 
     def compute_self_vibrato_intervals(self):
         if len(self.vibrato_intervals) == 0:
@@ -287,7 +232,7 @@ class PraatScript_Lyric_Wrapper():
         self.voice_quality_intervals, self.voice_quality_lists = self.compute_singing_style_intervals(self.snd, self.dt, self.phoneme_list, self.phoneme_intervals)
         self.coarse_voice_quality_lists, self.coarse_voice_quality_intervals = self.__compute_coarse_intervals(self.voice_quality_lists, self.voice_quality_intervals)
     def compute_singing_style_intervals(self, sound: parselmouth.Sound, dt, phone_list, phoneme_intervals):
-        formant = sound.to_formant_burg(time_step=dt)
+        formant = sound.to_formant_burg(time_step=self.dt)
         xs = formant.xs()
         formant_arr = np.zeros((len(xs), 3))
         for i in range(0, formant_arr.shape[0]):
@@ -561,6 +506,32 @@ class PraatScript_Lyric_Wrapper():
                         break
             index_intervals.append(index_interval)
         return index_intervals
+    def get_subarrays_indexes_from_time_interval(self, intervals, xs):
+        # here i'm assuming that all interval in intervals have [t0, t1] where t0 < t1
+        x_vals_low = [-1, -1]
+        index_intervals = []
+
+
+        # iterate through the intervals
+        search_pointer = 0
+        for interval in intervals:
+            # find the start of the interval
+            index_interval = [-1, -1]
+            for i in range(search_pointer, xs.shape[0]):
+                if xs[i] >= interval[0]:
+                    index_interval[0] = i
+                    search_pointer = i
+                    break
+            if interval[0] == interval[1]:
+                index_interval[1] = search_pointer
+            else:
+                for i in range(search_pointer, xs.shape[0]):
+                    if xs[i] >= interval[1]:
+                        index_interval[1] = max(i - 1, 0)
+                        search_pointer = max(i - 1, 0)
+                        break
+            index_intervals.append(index_interval)
+        return index_intervals
     def __compute_coarse_intervals(self, traits, intervals):
         new_intervals = []
         new_traits = []
@@ -588,111 +559,3 @@ class PraatScript_Lyric_Wrapper():
                 new_traits.append(trait)
                 new_intervals.append(interval)
         return new_traits, new_intervals
-class PraatScript_Lyric_Wrapper_Per_Line(PraatScript_Lyric_Wrapper):
-    def __init__(self, audio_path_file, transcript_path, aligned_grid = ""):
-        super().__init__(audio_path_file, transcript_path)
-        if aligned_grid == "":
-            self.compute_self_phoneme_alignment()
-        else:
-            self.phoneme_list, self.phoneme_intervals, self.word_list, self.word_intervals = self.load_phoneme_textgrid(aligned_grid)
-class PraatScript_player():
-    def __init__(self, tagged_song:PraatScript_Lyric_Wrapper):
-        self.tagged_song: PraatScript_Lyric_Wrapper = tagged_song
-        self.current_time = 0
-        self.phoneme_counter = 0
-        self.vibrato_counter = 0
-        self.voice_quality_counter = 0
-        self.pitch_counter = 0
-    def get_brow_actions(self):
-        return
-def format_conversion_m4a2wav(file_name: str):
-    filename = './Jali_Experiments/Jali_Experiments.{}'
-    from pydub import AudioSegment
-    audio: pydub.audio_segment.AudioSegment = AudioSegment.from_file(filename.format("wav"))
-    audio.export(filename.format("wav"), format="s16be")
-    os.remove(filename.format("m4a"))
-    return 0
-def create_lyric_alignment_textgrids(dir, file_name_template):
-    # break the lyric file into individual sentences files, using "\n" to seperate sentences
-    # this is expected to match the voice clips
-    sub_audio_location = os.path.join(dir, "temp")
-
-    # check if there are already textGrid files, cause error if it's non-empty
-    existing_files = [f for f in os.listdir(sub_audio_location) if re.match(r'\S*.TextGrid', f)]
-    if len(existing_files) > 0:
-        print("There are already alignment files at target location tion in the ./temp directory. \n"
-              "please either remove them if you wish to compute alignment again.")
-        return
-
-    with open(os.path.join(dir, file_name_template + ".txt")) as f:
-        lyrics = f.read().split("\n")
-    for i in range(0, len(lyrics)):
-        with open(os.path.join(sub_audio_location, file_name_template + "_{}.txt".format(i)), "w") as f:
-            f.write(lyrics[i])
-    # now find the sentences that are annotated manually:
-    files = os.listdir(sub_audio_location)
-    manual_files = [f for f in os.listdir(sub_audio_location) if re.match(r'\S*M.wav', f)]
-    manual_files = set([int(f[-6]) for f in manual_files])
-    sentences = []
-    textgrid_path = []
-    for i in range(0, len(lyrics)):
-        sentence = None
-        if i not in manual_files:
-            audio_file_path = os.path.join(sub_audio_location, file_name_template + "_{}.wav".format(i))
-            lyric_file_path = os.path.join(sub_audio_location, file_name_template + "_{}.txt".format(i))
-            sentence = PraatScript_Lyric_Wrapper_Per_Line(audio_file_path, lyric_file_path)
-        else:
-            audio_file_path = os.path.join(sub_audio_location, file_name_template + "_{}M.wav".format(i))
-            lyric_file_path = os.path.join(sub_audio_location, file_name_template + "_{}.txt".format(i))
-            sentence = PraatScript_Lyric_Wrapper_Per_Line(audio_file_path, lyric_file_path,
-                                                          os.path.join(sub_audio_location,
-                                                                       file_name_template + "_{}M.TextGrid".format(i)))
-        # write the sentence to textgrid
-        sentence.write_textgrid(sub_audio_location,
-                       os.path.join(sub_audio_location, file_name_template + "_{}".format(i)))
-        # store it for further use
-        sentences.append(sentence)
-        textgrid_path.append(os.path.join(sub_audio_location, file_name_template + "_{}".format(i)))
-    return textgrid_path, sentences
-def combine_lyric_alignment_textgrids(dir, file_name_template):
-    # get all the textgrid_files
-    sub_audio_location = os.path.join(dir, "temp")
-    textgrid_files = os.listdir(sub_audio_location)
-    textgrid_files = [os.path.join(sub_audio_location, f) for f in textgrid_files if re.match(r'\S*TextGrid', f)]
-    textgrid_files = sorted(textgrid_files)
-    output_obj = PraatScript_Lyric_Wrapper(os.path.join(dir, file_name_template + ".wav"),
-                                           os.path.join(dir, file_name_template + ".txt"),
-                                           sentence_textgrids_path=textgrid_files)
-    return output_obj
-if __name__ == "__main__":
-    dir = "E:/Structured_data/rolling_in_the_deep_adele"
-    file_name_template = "audio"
-    # create_lyric_alignment_textgrids(dir, file_name_template)
-
-    lyric = combine_lyric_alignment_textgrids(dir, file_name_template)
-    lyric.compute_self_pitch_intervals()
-    lyric.compute_self_vibrato_intervals()
-    lyric.compute_self_singing_style_intervals()
-
-    print(lyric.coarse_voice_quality_lists)
-    lyric.write_textgrid(dir, file_name_template + "_full")
-
-    # input (at the point the sentence alignment should be done already)
-    # the lyrics should also be prepared in files
-    # dir = "E:/Structured_data/rolling_in_the_deep_adele"
-    # file_name_template = "audio"
-    # lyric = PraatScript_Lyric_Wrapper(os.path.join(dir, file_name_template+".wav"), os.path.join(dir, file_name_template+".txt"))
-    # lyric.compute_self_phoneme_alignment()
-    # lyric.write_textgrid(dir, file_name_template+"kilian_raw")
-    # lyric = combine_lyric_alignment_textgrids(dir, file_name_template)
-    # lyric.compute_self_vibrato_intervals()
-    # lyric.compute_self_pitch_intervals()
-    # lyric.compute_self_singing_style_intervals()
-    # lyric.write_textgrid(dir, file_name_template + "_full")
-
-
-
-
-
-
-

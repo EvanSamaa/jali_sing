@@ -292,6 +292,9 @@ def extract_landmark_media_pipe_single_image(file_path):
 
 if __name__ == "__main__":
 
+    extract_landmarks_media_pipe("rolling_in_the_deep_2.mp4",
+                                 "E:\\MASC\\ten_videos\\rolling_in_the_deep", save_annotated_video=False)
+    A[2]
     show_annotated_video = False
     show_normalized_pts = False
     tolerance = 0.01

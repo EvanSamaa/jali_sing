@@ -1,5 +1,5 @@
 import numpy as np
-
+from matplotlib import pyplot as plt
 def compute_cost(a, b, x, y, E_line=0.1):
     # a and b are indexes into array x and y
     # x is the horizontal axis, y is the vertical
@@ -74,6 +74,8 @@ def efficient_piece_wise_linear_intervals(x, y):
         slope = (y[interval_i_index[1]] - y[interval_i_index[0]]) / (x[interval_i_index[1]] - x[interval_i_index[0]])
         pitch_intervals_slopes.append(slope)
 
+    if len(pitch_intervals_slopes) == 1:
+        return pitch_intervals_slopes, pitch_intervals_index
     # merge nearby intervals
     pitch_intervals = []
     pitch_slope = []
@@ -101,5 +103,20 @@ def efficient_piece_wise_linear_intervals(x, y):
             if i == len(pitch_intervals_slopes) - 1:
                 pitch_intervals.append([prev_begin, pitch_intervals_index[i][1]])
                 pitch_slope.append(prev_slope)
-    pitch_slope = [0 if abs(val) < 25 else val for val in pitch_slope]
+    # pitch_slope = [0 if abs(val) < 25 else val for val in pitch_slope]
     return pitch_slope, pitch_intervals
+def plot_piece_wise_lienar_intervals(xs, original_curve, intervals, slope):
+    x, y = get_key_points(xs, original_curve, intervals, slope)
+    plt.plot(x, y, "o")
+    plt.plot(xs, original_curve)
+    plt.show()
+    return x, y
+def get_key_points(xs, original_curve, intervals, slope):
+    x = [xs[intervals[0][0]]]
+    y = [original_curve[intervals[0][0]]]
+    for i in range(0, len(intervals)):
+        x.append(xs[intervals[i][1]])
+        y.append(original_curve[intervals[i][1]])
+    x = np.array(x)
+    y = np.array(y)
+    return x, y
