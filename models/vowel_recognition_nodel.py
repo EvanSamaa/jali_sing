@@ -140,7 +140,7 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_model_larger_model"
+    model_name = "viseme_net_model_larger_model_2000_epochs"
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:0"
@@ -210,7 +210,7 @@ if __name__ == "__main__":
                 print(acc_val)
             prev = np.array(loss_prev_epoch).mean()
             curr = np.array(loss_this_epoch).mean()
-            if prev - curr < 0 or abs(prev - curr) < 0.00001 and epoch > 500:
+            if prev - curr < 0 or abs(prev - curr) < 0.00001 and epoch > 1000:
                 break
             else:
                 loss_prev_epoch = loss_this_epoch
