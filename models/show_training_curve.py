@@ -37,12 +37,12 @@ if __name__ == "__main__":
         model_path = model_loc + m
         model = LSTM_vowel_recognizer()
         time = int(m.split("_")[-1][:-3])
-        print(time)
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict['model_state_dict'])
         model.eval()
-        accuracy = 0
+        mean_accuracy = 0
         weight = 1
+        mean_confusion_matrix = np.zeros((6, 6))
         for sentence, tags in test_dataloader:
             with torch.no_grad():
                 vowel_prediction = model(sentence)
@@ -52,7 +52,14 @@ if __name__ == "__main__":
                 # Step 4. Compute the loss, gradients, and update the parameters by
                 loss = loss_fn(vowel_prediction_flat, target_flat)
                 acc_val = accuracy(vowel_prediction_flat, target_flat).cpu().numpy()
-                accuracy = accuracy + acc_val * tags.shape[0] * tags.shape[1]
+                mean_accuracy = mean_accuracy + acc_val * tags.shape[0] * tags.shape[1]
                 weight = weight + tags.shape[0] * tags.shape[1]
-                A[2]
-
+                mean_confusion_matrix = build_confusion_matrix(vowel_prediction_flat, target_flat, mean_confusion_matrix)
+                break
+        test_accuracy.append([time, mean_accuracy/(weight-1)])
+        confusion_matrices.append([time, confusion_matrices])
+        if len(test_accuracy) == 2:
+            test_accuracy.sort(key=0)
+            confusion_matrices.sort(key=0)
+            print(test_accuracy)
+            print(confusion_matrices)
