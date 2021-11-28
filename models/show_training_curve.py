@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 loss = loss_fn(vowel_prediction_flat, target_flat)
                 acc_val = accuracy(vowel_prediction_flat, target_flat).cpu().numpy()
                 mean_accuracy = mean_accuracy + acc_val * tags.shape[0] * tags.shape[1]
-                mean_loss = mean_loss + append(loss.data.cpu().numpy())
+                mean_loss = mean_loss + loss.data.cpu().numpy()
                 weight = weight + tags.shape[0] * tags.shape[1]
                 mean_confusion_matrix = build_confusion_matrix(vowel_prediction_flat, target_flat, mean_confusion_matrix)
                 break
