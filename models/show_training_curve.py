@@ -59,7 +59,7 @@ if __name__ == "__main__":
         test_accuracy.append([time, mean_accuracy/(weight-1)])
         confusion_matrices.append([time, confusion_matrices])
         if len(test_accuracy) == 2:
-            test_accuracy.sort(key=0)
-            confusion_matrices.sort(key=0)
+            test_accuracy = sorted(test_accuracy, key=lambda x: x[0])
+            confusion_matrices = sorted(confusion_matrices, key=lambda x: x[0])
             print(test_accuracy)
             print(confusion_matrices)
