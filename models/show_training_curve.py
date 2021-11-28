@@ -24,7 +24,7 @@ if __name__ == "__main__":
     model_loc = dataset_root + model_name
     model_names = os.listdir(model_loc)
 
-    testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations_medusa.csv')), device)
+    testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations_medusa.csv')), None)
     test_dataloader = DataLoader(testing_set, batch_size=512, shuffle=False)
     loss_fn = torch.nn.CrossEntropyLoss()
 
