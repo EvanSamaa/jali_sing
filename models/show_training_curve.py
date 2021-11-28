@@ -43,7 +43,9 @@ if __name__ == "__main__":
         mean_accuracy = 0
         mean_loss = 0
         weight = 1
-
+        print(state_dict["loss"])
+        train_loss.append(state_dict["loss"])
+        A[2]
         mean_confusion_matrix = np.zeros((6, 6))
         for sentence, tags in test_dataloader:
             with torch.no_grad():
@@ -58,23 +60,26 @@ if __name__ == "__main__":
                 mean_loss = mean_loss + loss.data.cpu().numpy()
                 weight = weight + tags.shape[0] * tags.shape[1]
                 mean_confusion_matrix = build_confusion_matrix(vowel_prediction_flat, target_flat, mean_confusion_matrix)
-                break
         test_loss.append([time, mean_loss,(weight-1)])
         test_accuracy.append([time, mean_accuracy/(weight-1)])
         confusion_matrices.append([time, mean_confusion_matrix])
-        if len(test_accuracy) == 2:
-            test_accuracy = sorted(test_accuracy, key=lambda x: x[0])
-            test_loss = sorted(test_loss, key=lambda x: x[0])
-            confusion_matrices = sorted(confusion_matrices, key=lambda x: x[0])
-            print(confusion_matrices)
-            confusion_matrices_np = []
-            for item in confusion_matrices:
-                confusion_matrices_np.append(np.expand_dims(item[1], axis=0))
-            test_accuracy_np = np.array(test_accuracy)[:, 1]
-            confusion_matrices_np = np.concatenate(confusion_matrices_np, axis=0)
-            test_loss_np = np.array(test_loss)[:, 1]
+        print("current epochs = {}".append(time))
 
-            print(test_loss_np.shape, test_loss_np)
-            print(test_accuracy_np.shape, test_accuracy_np)
-            print(confusion_matrices_np.shape, confusion_matrices_np)
+    test_accuracy = sorted(test_accuracy, key=lambda x: x[0])
+    test_loss = sorted(test_loss, key=lambda x: x[0])
+    confusion_matrices = sorted(confusion_matrices, key=lambda x: x[0])
+
+    confusion_matrices_np = []
+    for item in confusion_matrices:
+        confusion_matrices_np.append(np.expand_dims(item[1], axis=0))
+    test_accuracy_np = np.array(test_accuracy)[:, 1]
+    confusion_matrices_np = np.concatenate(confusion_matrices_np, axis=0)
+    test_loss_np = np.array(test_loss)[:, 1]
+
+    np.save("../../Dataset/viseme_net_model_larger_model/confusion_matrix_training_curve.npy", confusion_matrices_np)
+    np.save("../../Dataset/viseme_net_model_larger_model/test_accuracy_training_curve.npy", test_accuracy_np)
+    np.save("../../Dataset/viseme_net_model_larger_model/test_loss_training_curve.npy", test_loss_np)
+    np.save("../../Dataset/viseme_net_model_larger_model/train_loss_training_curve.npy", train_loss_np)
+
+
 
