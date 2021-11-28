@@ -66,10 +66,14 @@ if __name__ == "__main__":
             test_accuracy = sorted(test_accuracy, key=lambda x: x[0])
             test_loss = sorted(test_loss, key=lambda x: x[0])
             confusion_matrices = sorted(confusion_matrices, key=lambda x: x[0])
+            confusion_matrices_np = []
+            for item in confusion_matrices:
+                confusion_matrices_np.append(np.expand_dims(item, axis=0))
+            test_accuracy_np = np.array(test_accuracy)[:, 1]
+            confusion_matrices_np = np.concatenate(confusion_matrices_np, axis=0)
+            test_loss_np = np.array(test_loss)[:, 1]
 
-            test_accuracy = np.array(test_accuracy)
-            confusion_matrices = np.array(confusion_matrices)
-            test_loss = np.array(test_loss)
+            print(test_loss_np.shape, test_loss_np)
+            print(test_accuracy_np.shape, test_accuracy_np)
+            print(confusion_matrices_np.shape, confusion_matrices)
 
-            print(test_accuracy.shape, test_accuracy)
-            print(confusion_matrices.shape, confusion_matrices)
