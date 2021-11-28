@@ -74,10 +74,10 @@ if __name__ == "__main__":
     confusion_matrices_np = []
     for item in confusion_matrices:
         confusion_matrices_np.append(np.expand_dims(item[1], axis=0))
-    test_accuracy_np = np.array(test_accuracy)[:, 1]
+    test_accuracy_np = np.array(test_accuracy)
     confusion_matrices_np = np.concatenate(confusion_matrices_np, axis=0)
-    test_loss_np = np.array(test_loss)[:, 1]
-    train_loss_np = np.array(train_loss)[:, 1]
+    test_loss_np = np.array(test_loss)
+    train_loss_np = np.array(train_loss)
 
     np.save("../../Dataset/viseme_net_model_larger_model/confusion_matrix_training_curve.npy", confusion_matrices_np)
     np.save("../../Dataset/viseme_net_model_larger_model/test_accuracy_training_curve.npy", test_accuracy_np)
