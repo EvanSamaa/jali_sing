@@ -8,7 +8,7 @@ from collections import OrderedDict
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-from .vowel_recognition_nodel import LSTM_vowel_recognizer
+from vowel_recognition_nodel import LSTM_vowel_recognizer
 
 if __name__ == "__main__":
     dataset_root = "../../Dataset/"
