@@ -179,7 +179,7 @@ if __name__ == "__main__":
     loss_this_epoch = []
     loss_prev_epoch = [20]
 
-    for epoch in range(650, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
+    for epoch in range(641, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
         for sentence, tags in train_dataloader:
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
