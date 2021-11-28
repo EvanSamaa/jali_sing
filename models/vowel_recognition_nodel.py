@@ -92,7 +92,7 @@ if __name__ == "__main__":
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:0"
-        dataset_root = "~/home/Dataset/"
+        dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
         dev = "cpu"
@@ -102,8 +102,6 @@ if __name__ == "__main__":
         os.mkdir(os.path.join(dataset_root, model_name))
     except:
         print("overwriting old directory of {}".format(model_name))
-
-
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer()
@@ -137,8 +135,8 @@ if __name__ == "__main__":
             loss = loss_fn(vowel_prediction_flat, target_flat)
             loss.backward()
             optimizer.step()
-            loss_val = loss.data.numpy()
-            acc_val = accuracy(vowel_prediction_flat, target_flat).numpy()
+            loss_val = loss.data.cpu().numpy()
+            acc_val = accuracy(vowel_prediction_flat, target_flat).cpu().numpy()
             print("epoch = ", epoch, "\t\t", "loss = ", loss_val, "\t\t", "accuracy = ", acc_val)
             loss_this_epoch.append(loss_val)
 
@@ -156,7 +154,7 @@ if __name__ == "__main__":
                     [vowel_prediction.shape[0] * vowel_prediction.shape[1], -1])
                 target_flat = test_tag.view([test_tag.shape[0] * test_tag.shape[1], ])
                 # Step 4. Compute the loss, gradients, and update the parameters by
-                acc_val = accuracy(vowel_prediction_flat, target_flat).numpy()
+                acc_val = accuracy(vowel_prediction_flat, target_flat).cpu().numpy()
                 print(acc_val)
             prev = np.array(loss_prev_epoch).mean()
             curr = np.array(loss_this_epoch).mean()
