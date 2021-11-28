@@ -115,7 +115,7 @@ class LSTM_vowel_recognizer_larger(nn.Module):
         x = self.bn1(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.relu(x)
         x = self.output_mat2(x)
-        x = self.bn(x.permute(0, 2, 1)).permute(0, 2, 1)
+        x = self.bn2(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.relu(x)
         x = self.output_mat3(x)
         return x
