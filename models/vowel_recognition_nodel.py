@@ -85,22 +85,35 @@ def build_confusion_matrix(output, label, mat):
 
 if __name__ == "__main__":
 
+    # input things
+    #
+    dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
+    model_name = "viseme_net_model"
+
+    # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:0"
+        dataset_root = "~/home/Dataset/"
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
         dev = "cpu"
     device = torch.device(dev)
+    try:
+        os.mkdir(os.path.join(dataset_root, model_name))
+    except:
+        print("overwriting old directory of {}".format(model_name))
+
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer()
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-5)
     epochs = 1000
-    training_set = Custom_Dataset(os.path.join("C:/Users/evansamaa/Desktop/Dataset/train", 'annotations.csv'))
+    training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations.csv')))
     train_dataloader = DataLoader(training_set, batch_size=256, shuffle=True)
-    testing_set = Custom_Dataset(os.path.join("C:/Users/evansamaa/Desktop/Dataset/test", 'annotations.csv'))
+    testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations.csv')))
     test_dataloader = DataLoader(testing_set, batch_size=256, shuffle=True)
-    checkpoint_path = "C:/Users/evansamaa/Desktop/Dataset/cp/model_epoch_{}.pt"
+    checkpoint_path = os.path.join(dataset_root, model_name+"/model_epoch_{}.pt")
     test_sent = 0
     test_tag = 0
     for sentence, tags in test_dataloader:
