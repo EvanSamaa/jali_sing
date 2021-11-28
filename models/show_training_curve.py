@@ -36,7 +36,7 @@ if __name__ == "__main__":
     for m in model_names:
         model_path = model_loc + m
         model = LSTM_vowel_recognizer()
-        time = int(m.split("_")[-1][-3:])
+        time = int(m.split("_")[-1][:-3])
         print(time)
         state_dict = torch.load(model_path)
         model.load_state_dict(state_dict['model_state_dict'])
