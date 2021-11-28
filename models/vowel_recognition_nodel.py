@@ -16,12 +16,9 @@ class Custom_Dataset(Dataset):
         return len(self.img_labels)
     def __getitem__(self, idx):
         data_path = self.img_labels.iloc[idx, 0]
-        print("here")
-        data = torch.from_numpy(np.load(data_path))
-        print(data.device)
+        data = torch.tensor(np.load(data_path), dtype=torch.float32)
         label_path = self.img_labels.iloc[idx, 1]
-        label = torch.from_numpy(np.load(label_path))
-        print(label.device)
+        label = torch.tensor(np.load(label_path), dtype=torch.long)
         return data, label
 
 # this is the one I used
@@ -113,9 +110,9 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-5)
     epochs = 1000
     training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations.csv')), device)
-    train_dataloader = DataLoader(training_set, batch_size=256, shuffle=True)
+    train_dataloader = DataLoader(training_set, batch_size=256, shuffle=False)
     testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations.csv')), device)
-    test_dataloader = DataLoader(testing_set, batch_size=256, shuffle=True)
+    test_dataloader = DataLoader(testing_set, batch_size=256, shuffle=False)
     checkpoint_path = os.path.join(dataset_root, model_name+"/model_epoch_{}.pt")
     test_sent = 0
     test_tag = 0
