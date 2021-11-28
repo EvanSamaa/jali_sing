@@ -43,8 +43,8 @@ if __name__ == "__main__":
         mean_accuracy = 0
         mean_loss = 0
         weight = 1
-        print(state_dict["loss"])
-        train_loss.append(state_dict["loss"])
+        print(state_dict["loss"].data.cpu().numpy())
+        train_loss.append(time, state_dict["loss"].data.cpu().numpy())
         A[2]
         mean_confusion_matrix = np.zeros((6, 6))
         for sentence, tags in test_dataloader:
