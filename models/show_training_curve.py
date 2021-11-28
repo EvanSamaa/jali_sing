@@ -68,7 +68,7 @@ if __name__ == "__main__":
             confusion_matrices = sorted(confusion_matrices, key=lambda x: x[0])
 
             test_accuracy = np.array(test_accuracy)
-            confusion_matrices = np.array(test_accuracy)
+            confusion_matrices = np.array(confusion_matrices)
             test_loss = np.array(test_loss)
 
             print(test_accuracy.shape, test_accuracy)
