@@ -140,7 +140,7 @@ if __name__ == "__main__":
             print("epoch = ", epoch, "\t\t", "loss = ", loss_val, "\t\t", "accuracy = ", acc_val)
             loss_this_epoch.append(loss_val)
 
-        if epoch%20 == 0:
+        if epoch%5 == 0:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
