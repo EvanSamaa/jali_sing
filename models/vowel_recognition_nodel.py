@@ -109,9 +109,9 @@ if __name__ == "__main__":
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-5)
     epochs = 1000
-    training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations.csv')), device)
+    training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations_medusa.csv')), device)
     train_dataloader = DataLoader(training_set, batch_size=256, shuffle=False)
-    testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations.csv')), device)
+    testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations_medusa.csv')), device)
     test_dataloader = DataLoader(testing_set, batch_size=256, shuffle=False)
     checkpoint_path = os.path.join(dataset_root, model_name+"/model_epoch_{}.pt")
     test_sent = 0
