@@ -103,6 +103,42 @@ if __name__ == "__main__":
     except:
         print("overwriting old directory of {}".format(model_name))
 
+    ####################### run once #######################
+    import csv, os
+    output_path_test = os.path.join(dataset_root, "test")
+    output_path_train = os.path.join(dataset_root, "train")
+    test_csv = os.path.join(output_path_test, 'annotations.csv')
+    with open(test_csv) as file:
+        str_content = file.read()
+    content = str_content.split("\n")
+    with open(os.path.join(output_path_test, 'annotations_medusa.csv'), 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=',')
+        for item in content:
+            try:
+                data, label = item.split(",")
+            except:
+                print("failed at this row " + item)
+                continue
+            data = os.path.join("~/home/Dataset/", data.split("Dataset")[1])
+            label = os.path.join("~/home/Dataset/", label.split("Dataset")[1])
+            spamwriter.writerow([data, label])
+    train_csv = os.path.join(output_path_train, 'annotations.csv')
+    with open(train_csv) as file:
+        str_content = file.read()
+    content = str_content.split("\n")
+    with open(os.path.join(output_path_train, 'annotations_medusa.csv'), 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=',')
+        for item in content:
+            try:
+                data, label = item.split(",")
+            except:
+                print("failed at this row " + item)
+                continue
+            data = os.path.join("~/home/Dataset/", data.split("Dataset")[1])
+            label = os.path.join("~/home/Dataset/", label.split("Dataset")[1])
+            spamwriter.writerow([data, label])
+    ####################### run once #######################
+
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer()
