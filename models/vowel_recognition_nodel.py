@@ -140,7 +140,7 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_model_larger_model_2000_epochs"
+    model_name = "viseme_net_model"
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:0"
@@ -157,8 +157,12 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer()
+    # for re-training
+    model.load_state_dict(torch.load("../../Dataset/viseme_net_model/model_epoch_650.pt")['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
+    # for re-training
+    optimizer.load_state_dict(torch.load("../../Dataset/viseme_net_model/model_epoch_650.pt")['optimizer_state_dict'])
     epochs = 10000
     training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations_medusa.csv')), device)
     train_dataloader = DataLoader(training_set, batch_size=512, shuffle=False)
@@ -175,7 +179,7 @@ if __name__ == "__main__":
     loss_this_epoch = []
     loss_prev_epoch = [20]
 
-    for epoch in range(epochs):  # again, normally you would NOT do 300 epochs, it is toy data
+    for epoch in range(650, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
         for sentence, tags in train_dataloader:
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
@@ -192,7 +196,7 @@ if __name__ == "__main__":
             print("epoch = ", epoch, "\t\t", "loss = ", loss_val, "\t\t", "accuracy = ", acc_val)
             loss_this_epoch.append(loss_val)
 
-        if epoch%5 == 0:
+        if epoch%20 == 0:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
