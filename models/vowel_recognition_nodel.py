@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
     model = LSTM_vowel_recognizer()
     loss_fn = torch.nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-5)
-    epochs = 1000
+    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+    epochs = 10000
     training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations_medusa.csv')), device)
     train_dataloader = DataLoader(training_set, batch_size=256, shuffle=False)
     testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations_medusa.csv')), device)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             print("epoch = ", epoch, "\t\t", "loss = ", loss_val, "\t\t", "accuracy = ", acc_val)
             loss_this_epoch.append(loss_val)
 
-        if epoch%5 == 0:
+        if epoch%20 == 0:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                 print(acc_val)
             prev = np.array(loss_prev_epoch).mean()
             curr = np.array(loss_this_epoch).mean()
-            if prev - curr < 0 or abs(prev - curr) < 0.00001:
+            if prev - curr < 0 or abs(prev - curr) < 0.00001 and epoch > 500:
                 break
             else:
                 loss_prev_epoch = loss_this_epoch
