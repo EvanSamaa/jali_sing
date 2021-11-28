@@ -65,7 +65,7 @@ if __name__ == "__main__":
         test_loss.append([time, mean_loss,(weight-1)])
         test_accuracy.append([time, mean_accuracy/(weight-1)])
         confusion_matrices.append([time, mean_confusion_matrix])
-        print("current epochs = {}".append(time))
+        print("competed current epochs = {}".format(time))
         if len(test_accuracy) == 2:
             test_accuracy = sorted(test_accuracy, key=lambda x: x[0])
             test_loss = sorted(test_loss, key=lambda x: x[0])
