@@ -88,10 +88,10 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_model_small_lr"
+    model_name = "viseme_net_model_smaller_lr"
     # prepare pytorch stuff
     if torch.cuda.is_available():
-        dev = "cuda:0"
+        dev = "cuda:1"
         dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     model = LSTM_vowel_recognizer()
     loss_fn = torch.nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=0.00001)
     epochs = 10000
     training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations_medusa.csv')), device)
     train_dataloader = DataLoader(training_set, batch_size=512, shuffle=False)
