@@ -16,9 +16,12 @@ class Custom_Dataset(Dataset):
         return len(self.img_labels)
     def __getitem__(self, idx):
         data_path = self.img_labels.iloc[idx, 0]
-        data = torch.tensor(np.load(data_path), dtype=torch.float32)
+        print("here")
+        data = torch.from_numpy(np.load(data_path))
+        print(data.device)
         label_path = self.img_labels.iloc[idx, 1]
-        label = torch.tensor(np.load(label_path), dtype=torch.long)
+        label = torch.from_numpy(np.load(label_path))
+        print(label.device)
         return data, label
 
 # this is the one I used
@@ -89,7 +92,6 @@ if __name__ == "__main__":
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
     model_name = "viseme_net_model"
-
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:0"
@@ -97,6 +99,7 @@ if __name__ == "__main__":
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
         dev = "cpu"
+    print("running on {}".format(dev))
     device = torch.device(dev)
     try:
         os.mkdir(os.path.join(dataset_root, model_name))
