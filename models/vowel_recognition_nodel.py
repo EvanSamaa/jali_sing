@@ -10,15 +10,15 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 class Custom_Dataset(Dataset):
-    def __init__(self, annotations_file):
+    def __init__(self, annotations_file, device):
         self.img_labels = pd.read_csv(annotations_file)
     def __len__(self):
         return len(self.img_labels)
     def __getitem__(self, idx):
         data_path = self.img_labels.iloc[idx, 0]
-        data = torch.FloatTensor(np.load(data_path))
+        data = torch.tensor(np.load(data_path), dtype=torch.float32)
         label_path = self.img_labels.iloc[idx, 1]
-        label = torch.LongTensor(np.load(label_path))
+        label = torch.tensor(np.load(label_path), dtype=torch.long)
         return data, label
 
 # this is the one I used
@@ -86,7 +86,7 @@ def build_confusion_matrix(output, label, mat):
 if __name__ == "__main__":
 
     # input things
-    #
+    # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
     model_name = "viseme_net_model"
 
