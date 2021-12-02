@@ -228,14 +228,14 @@ if __name__ == "__main__":
         for sentence, tags in train_dataloader:
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
-            if epoch%2 == 0:
+            if epoch%2 == 0 and sentence.shape[0] == batch_size:
                 sentence0 = sentence[0:int(batch_size/2)]
                 sentence1 = sentence[int(batch_size/2):]
                 tags0 = tags[0:int(batch_size/2)]
                 tags1 = tags[int(batch_size/2):]
                 sentence = torch.cat([sentence0, sentence1], dim=1)
                 tags = torch.cat([tags0, tags1], dim=1)
-            elif epoch%3 == 0:
+            elif epoch%3 == 0 and sentence.shape[0] == batch_size:
                 sentence = torch.cat([sentence[0:int(batch_size / 4)], sentence[int(batch_size/4):int(batch_size/2)], sentence[int(batch_size/2):int(3*batch_size/4)], sentence[int(3*batch_size/4):]], dim=1)
                 tags = torch.cat([tags[0:int(batch_size / 4)], tags[int(batch_size/4):int(batch_size/2)], tags[int(batch_size/2):int(3*batch_size/4)], tags[int(3*batch_size/4):]], dim=1)
 
