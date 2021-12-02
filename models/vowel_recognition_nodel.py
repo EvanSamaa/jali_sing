@@ -181,16 +181,26 @@ def build_confusion_matrix(output, label, mat):
     for i in range(0, output.shape[0]):
         out[maxy[i], label[i]] = out[maxy[i], label[i]] + 1
     return out
-
+def Smoothness_loss():
+    sm = nn.Softmax(dim=2)
+    weight = torch.FloatTensor(np.array([-1, 1]))
+    weight = weight.view((1, 1, 2))
+    weight = torch.cat([weight, weight, weight, weight, weight, weight], dim=0)
+    def loss(output:torch.FloatTensor):
+        x = sm(output)
+        out = torch.nn.functional.conv1d(x.permute(0, 2, 1), weight, padding="valid", groups=x.shape[2])
+        out = torch.square(out)
+        out = torch.mean(out)
+        return out
+    return loss
 if __name__ == "__main__":
-
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_long_sequence"
+    model_name = "viseme_net_long_sequence_smoothness_loss"
     # prepare pytorch stuff
     if torch.cuda.is_available():
-        dev = "cuda:0"
+        dev = "cuda:1"
         dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
@@ -206,6 +216,7 @@ if __name__ == "__main__":
     model = LSTM_vowel_recognizer_no_BN()
     model.load_state_dict(torch.load(dataset_root + "viseme_net_model/model_epoch_1320.pt", map_location=device)['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
+    sm_loss = Smoothness_loss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
     epochs = 10000
     batch_size = 512
@@ -244,7 +255,7 @@ if __name__ == "__main__":
             vowel_prediction_flat = vowel_prediction.view([vowel_prediction.shape[0] * vowel_prediction.shape[1], -1])
             target_flat = tags.view([tags.shape[0] * tags.shape[1], ])
             # Step 4. Compute the loss, gradients, and update the parameters by
-            loss = loss_fn(vowel_prediction_flat, target_flat)
+            loss = loss_fn(vowel_prediction_flat, target_flat) + sm_loss(vowel_prediction) * 5
             loss.backward()
             optimizer.step()
             loss_val = loss.data.cpu().numpy()
