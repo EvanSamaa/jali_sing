@@ -187,10 +187,10 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_no_bn"
+    model_name = "viseme_net_long_sequence"
     # prepare pytorch stuff
     if torch.cuda.is_available():
-        dev = "cuda:1"
+        dev = "cuda:0"
         dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
@@ -204,14 +204,15 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer_no_BN()
-    model.load_state_dict(torch.load(dataset_root + "viseme_net_model/model_epoch_1320.pt")['model_state_dict'])
+    model.load_state_dict(torch.load(dataset_root + "viseme_net_model/model_epoch_1320.pt", map_location=device)['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
     epochs = 10000
+    batch_size = 512
     training_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("train", 'annotations_medusa.csv')), device)
-    train_dataloader = DataLoader(training_set, batch_size=512, shuffle=False)
+    train_dataloader = DataLoader(training_set, batch_size=batch_size, shuffle=False)
     testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations_medusa.csv')), device)
-    test_dataloader = DataLoader(testing_set, batch_size=512, shuffle=False)
+    test_dataloader = DataLoader(testing_set, batch_size=batch_size, shuffle=False)
     checkpoint_path = os.path.join(dataset_root, model_name+"/model_epoch_{}.pt")
     test_sent = 0
     test_tag = 0
@@ -227,6 +228,17 @@ if __name__ == "__main__":
         for sentence, tags in train_dataloader:
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
+            if epoch%2 == 0:
+                sentence0 = sentence[0:int(batch_size/2)]
+                sentence1 = sentence[int(batch_size/2):]
+                tags0 = tags[0:int(batch_size/2)]
+                tags1 = tags[int(batch_size/2):]
+                sentence = torch.cat([sentence0, sentence1], dim=1)
+                tags = torch.cat([tags0, tags1], dim=1)
+            elif epoch%3 == 0:
+                sentence = torch.cat([sentence[0:int(batch_size / 4)], sentence[int(batch_size/4):int(batch_size/2)], sentence[int(batch_size/2):int(3*batch_size/4)], sentence[int(3*batch_size/4):]], dim=1)
+                tags = torch.cat([tags[0:int(batch_size / 4)], tags[int(batch_size/4):int(batch_size/2)], tags[int(batch_size/2):int(3*batch_size/4)], tags[int(3*batch_size/4):]], dim=1)
+
             model.zero_grad()
             vowel_prediction = model(sentence)
             vowel_prediction_flat = vowel_prediction.view([vowel_prediction.shape[0] * vowel_prediction.shape[1], -1])
@@ -240,7 +252,7 @@ if __name__ == "__main__":
             print("epoch = ", epoch, "\t\t", "loss = ", loss_val, "\t\t", "accuracy = ", acc_val)
             loss_this_epoch.append(loss_val)
 
-        if epoch%20 == 0:
+        if epoch%40 == 0:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
