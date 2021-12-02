@@ -79,7 +79,7 @@ class LSTM_vowel_recognizer_no_BN(nn.Module):
         self.num_lstm_layer = num_lstm_layer
         # The LSTM takes word embeddings as inputs, and outputs hidden states
         # with dimensionality hidden_dim.
-        self.lstm = nn.LSTM(65 * (self.win_length * 2 + 1), self.hidden_dim, num_lstm_layer)
+        self.lstm = nn.LSTM(65 * (self.win_length * 2 + 1), self.hidden_dim, num_lstm_layer, batch_first=True)
         self.output_mat1 = nn.Linear(self.hidden_dim, 6)
         self.output_mat2 = nn.Linear(64, 64)
         self.output_mat3 = nn.Linear(64, 6)
@@ -181,9 +181,12 @@ def build_confusion_matrix(output, label, mat):
     for i in range(0, output.shape[0]):
         out[maxy[i], label[i]] = out[maxy[i], label[i]] + 1
     return out
-def Smoothness_loss():
+def Smoothness_loss(device):
     sm = nn.Softmax(dim=2)
-    weight = torch.cuda.FloatTensor([-1, 1])
+    if device != "cpu":
+        weight = torch.cuda.FloatTensor([-1, 1])
+    else:
+        weight = torch.FloatTensor([-1, 1])
     weight = weight.view((1, 1, 2))
     weight = torch.cat([weight, weight, weight, weight, weight, weight], dim=0)
     def loss(output:torch.FloatTensor):
@@ -197,7 +200,7 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_long_sequence_smoothness_loss"
+    model_name = "viseme_net_long_sequence_smoothness_loss_corrected_dimension"
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:1"
@@ -216,7 +219,7 @@ if __name__ == "__main__":
     model = LSTM_vowel_recognizer_no_BN()
     model.load_state_dict(torch.load(dataset_root + "viseme_net_long_sequence_smoothness_loss/model_epoch_800.pt", map_location=device)['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
-    sm_loss = Smoothness_loss()
+    sm_loss = Smoothness_loss(dev)
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
     epochs = 10000
     batch_size = 512
