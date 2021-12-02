@@ -183,7 +183,7 @@ def build_confusion_matrix(output, label, mat):
     return out
 def Smoothness_loss():
     sm = nn.Softmax(dim=2)
-    weight = torch.FloatTensor(np.array([-1, 1]))
+    weight = torch.cuda.FloatTensor([-1, 1])
     weight = weight.view((1, 1, 2))
     weight = torch.cat([weight, weight, weight, weight, weight, weight], dim=0)
     def loss(output:torch.FloatTensor):
