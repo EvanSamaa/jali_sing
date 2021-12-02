@@ -106,7 +106,7 @@ class LSTM_vowel_recognizer_no_BN(nn.Module):
     def forward(self, input_audio):
         mod_audio = self.concate_frames(input_audio)
         # here I'm assuming that the input_audio is of shape
-        hidden_state = [torch.zeros((self.num_lstm_layer, mod_audio.shape[1], self.hidden_dim)), torch.zeros((self.num_lstm_layer, mod_audio.shape[1], self.hidden_dim))]
+        hidden_state = [torch.zeros((self.num_lstm_layer, mod_audio.shape[0], self.hidden_dim)), torch.zeros((self.num_lstm_layer, mod_audio.shape[1], self.hidden_dim))]
         out, hidden_state = self.lstm(mod_audio, hidden_state)
         # bn
         # x = self.bn(out.permute(0, 2, 1)).permute(0, 2, 1)
