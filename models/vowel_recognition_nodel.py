@@ -214,7 +214,7 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer_no_BN()
-    model.load_state_dict(torch.load(dataset_root + "viseme_net_model/model_epoch_1320.pt", map_location=device)['model_state_dict'])
+    model.load_state_dict(torch.load(dataset_root + "viseme_net_long_sequence_smoothness_loss/model_epoch_800.pt", map_location=device)['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     sm_loss = Smoothness_loss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     loss_this_epoch = []
     loss_prev_epoch = [20]
 
-    for epoch in range(0, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
+    for epoch in range(801, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
         for sentence, tags in train_dataloader:
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
@@ -281,7 +281,7 @@ if __name__ == "__main__":
                 print(acc_val)
             prev = np.array(loss_prev_epoch).mean()
             curr = np.array(loss_this_epoch).mean()
-            if prev - curr < 0 or abs(prev - curr) < 0.00001 and epoch > 1000:
+            if epoch > 3000:
                 break
             else:
                 loss_prev_epoch = loss_this_epoch
