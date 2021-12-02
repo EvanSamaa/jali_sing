@@ -203,7 +203,7 @@ if __name__ == "__main__":
         print("overwriting old directory of {}".format(model_name))
     torch.manual_seed(0)
 
-    model = LSTM_vowel_recognizer_larger()
+    model = LSTM_vowel_recognizer_no_BN()
     model.load_state_dict(torch.load(dataset_root + "viseme_net_model/model_epoch_1320.pt")['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
