@@ -41,7 +41,7 @@ class LSTM_vowel_recognizer(nn.Module):
         self.bn2 = nn.BatchNorm1d(64)
 
         self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=2)
     def concate_frames(self, input_audio):
         padding = torch.zeros((input_audio.shape[0], self.win_length, input_audio.shape[2]))
         padded_input_audio = torch.cat([padding, input_audio, padding], dim=1)
@@ -64,6 +64,53 @@ class LSTM_vowel_recognizer(nn.Module):
         # bn
         x = self.bn(out.permute(0, 2, 1)).permute(0, 2, 1)
         x = self.relu(x)
+        x = self.output_mat1(x)
+        return x
+
+    def test_forward(self, input_audio):
+        x = self.forward(input_audio)
+        return self.softmax(x)
+class LSTM_vowel_recognizer_no_BN(nn.Module):
+    def __init__(self, hidden_dim=256, win_length=12, num_lstm_layer=3):
+        super(LSTM_vowel_recognizer_no_BN, self).__init__()
+        # here I'm going to assume the input is gonna be shaped as
+        self.hidden_dim = hidden_dim
+        self.win_length = win_length
+        self.num_lstm_layer = num_lstm_layer
+        # The LSTM takes word embeddings as inputs, and outputs hidden states
+        # with dimensionality hidden_dim.
+        self.lstm = nn.LSTM(65 * (self.win_length * 2 + 1), self.hidden_dim, num_lstm_layer)
+        self.output_mat1 = nn.Linear(self.hidden_dim, 6)
+        self.output_mat2 = nn.Linear(64, 64)
+        self.output_mat3 = nn.Linear(64, 6)
+        self.relu = nn.ReLU()
+        self.bn = nn.BatchNorm1d(self.hidden_dim)
+        self.bn1 = nn.BatchNorm1d(64)
+        self.bn2 = nn.BatchNorm1d(64)
+
+        self.sigmoid = nn.Sigmoid()
+        self.softmax = nn.Softmax(dim=2)
+    def concate_frames(self, input_audio):
+        padding = torch.zeros((input_audio.shape[0], self.win_length, input_audio.shape[2]))
+        padded_input_audio = torch.cat([padding, input_audio, padding], dim=1)
+        window_audio = []
+        for i in range(0, input_audio.shape[1]):
+            window_count = i + 12
+            current_window = padded_input_audio[:, window_count-12:window_count+13]
+            s = current_window.shape
+            current_window = current_window.view((s[0], s[1] * s[2]))
+            current_window = torch.unsqueeze(current_window, 1)
+            window_audio.append(current_window)
+        rtv = torch.cat(window_audio, dim=1)
+        return rtv
+    def forward(self, input_audio):
+        mod_audio = self.concate_frames(input_audio)
+        # here I'm assuming that the input_audio is of shape
+        hidden_state = [torch.zeros((self.num_lstm_layer, mod_audio.shape[1], self.hidden_dim)), torch.zeros((self.num_lstm_layer, mod_audio.shape[1], self.hidden_dim))]
+        out, hidden_state = self.lstm(mod_audio, hidden_state)
+        # bn
+        # x = self.bn(out.permute(0, 2, 1)).permute(0, 2, 1)
+        x = self.relu(out)
         x = self.output_mat1(x)
         return x
 
@@ -140,7 +187,7 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_model_3_layer_model"
+    model_name = "viseme_net_no_bn"
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:1"
@@ -157,6 +204,7 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer_larger()
+    model.load_state_dict(torch.load(dataset_root + "viseme_net_model/model_epoch_1320.pt")['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
     epochs = 10000
