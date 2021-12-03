@@ -217,7 +217,7 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer_no_BN()
-    model.load_state_dict(torch.load(dataset_root + "viseme_net_long_sequence_smoothness_loss/model_epoch_800.pt", map_location=device)['model_state_dict'])
+    model.load_state_dict(torch.load(dataset_root + "viseme_net_long_sequence_smoothness_loss_corrected_dimension/model_epoch_1560.pt", map_location=device)['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     sm_loss = Smoothness_loss(dev)
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
