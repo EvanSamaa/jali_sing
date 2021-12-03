@@ -203,7 +203,7 @@ if __name__ == "__main__":
     model_name = "viseme_net_long_sequence_corrected_dimension"
     # prepare pytorch stuff
     if torch.cuda.is_available():
-        dev = "cuda:1"
+        dev = "cuda:0"
         dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
