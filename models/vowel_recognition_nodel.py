@@ -200,7 +200,7 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_long_sequence_smoothness_loss_corrected_dimension"
+    model_name = "viseme_net_long_sequence_corrected_dimension"
     # prepare pytorch stuff
     if torch.cuda.is_available():
         dev = "cuda:1"
@@ -258,7 +258,7 @@ if __name__ == "__main__":
             vowel_prediction_flat = vowel_prediction.view([vowel_prediction.shape[0] * vowel_prediction.shape[1], -1])
             target_flat = tags.view([tags.shape[0] * tags.shape[1], ])
             # Step 4. Compute the loss, gradients, and update the parameters by
-            loss = loss_fn(vowel_prediction_flat, target_flat) + sm_loss(vowel_prediction) * 5
+            loss = loss_fn(vowel_prediction_flat, target_flat)
             loss.backward()
             optimizer.step()
             loss_val = loss.data.cpu().numpy()
