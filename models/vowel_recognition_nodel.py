@@ -200,10 +200,10 @@ if __name__ == "__main__":
     # input things
     # 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
     dataset_root = "C:/Users/evansamaa/Desktop/Dataset/"
-    model_name = "viseme_net_long_sequence_corrected_dimension_from_scratch"
+    model_name = "viseme_net_long_sequence_smoothness_loss_corrected_dimension"
     # prepare pytorch stuff
     if torch.cuda.is_available():
-        dev = "cuda:1"
+        dev = "cuda:0"
         dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     model = LSTM_vowel_recognizer_no_BN()
-    # model.load_state_dict(torch.load(dataset_root + "viseme_net_long_sequence_smoothness_loss_corrected_dimension/model_epoch_1560.pt", map_location=device)['model_state_dict'])
+    model.load_state_dict(torch.load(dataset_root + "viseme_net_long_sequence_smoothness_loss_corrected_dimension/model_epoch_1560.pt", map_location=device)['model_state_dict'])
     loss_fn = torch.nn.CrossEntropyLoss()
     # sm_loss = Smoothness_loss(dev)
     optimizer = optim.Adam(model.parameters(), lr=0.00001)
