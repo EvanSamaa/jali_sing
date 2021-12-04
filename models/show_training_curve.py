@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     dataset_root = "../../Dataset/"
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
-    model_name = "viseme_net_model_larger_model/"
+    model_name = "viseme_net_long_sequence_corrected_dimension_from_scratch/"
     model_loc = dataset_root + model_name
     model_names = os.listdir(model_loc)
     model_names = ["model_epoch_3040.pt"]
