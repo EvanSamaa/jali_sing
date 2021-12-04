@@ -203,7 +203,7 @@ if __name__ == "__main__":
     model_name = "viseme_net_long_sequence_smoothness_loss_corrected_dimension"
     # prepare pytorch stuff
     if torch.cuda.is_available():
-        dev = "cuda:0"
+        dev = "cuda:1"
         dataset_root = "../../Dataset/"
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     loss_this_epoch = []
     loss_prev_epoch = [20]
 
-    for epoch in range(1560, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
+    for epoch in range(1561, epochs):  # again, normally you would NOT do 300 epochs, it is toy data
         for sentence, tags in train_dataloader:
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
