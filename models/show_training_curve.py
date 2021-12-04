@@ -23,6 +23,7 @@ if __name__ == "__main__":
     model_name = "viseme_net_model_larger_model/"
     model_loc = dataset_root + model_name
     model_names = os.listdir(model_loc)
+    model_names = ["model_epoch_3040.pt"]
 
     testing_set = Custom_Dataset(os.path.join(dataset_root, os.path.join("test", 'annotations_medusa.csv')), None)
     test_dataloader = DataLoader(testing_set, batch_size=512, shuffle=False)
