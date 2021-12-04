@@ -80,10 +80,10 @@ if __name__ == "__main__":
     test_loss_np = np.array(test_loss)
     train_loss_np = np.array(train_loss)
 
-    np.save("../../Dataset/viseme_net_model_larger_model/confusion_matrix_training_curve.npy", confusion_matrices_np)
-    np.save("../../Dataset/viseme_net_model_larger_model/test_accuracy_training_curve.npy", test_accuracy_np)
-    np.save("../../Dataset/viseme_net_model_larger_model/test_loss_training_curve.npy", test_loss_np)
-    np.save("../../Dataset/viseme_net_model_larger_model/train_loss_training_curve.npy", train_loss_np)
+    np.save("../../Dataset/viseme_net_long_sequence_corrected_dimension_from_scratch/confusion_matrix_training_curve.npy", confusion_matrices_np)
+    np.save("../../Dataset/viseme_net_long_sequence_corrected_dimension_from_scratch/test_accuracy_training_curve.npy", test_accuracy_np)
+    np.save("../../Dataset/viseme_net_long_sequence_corrected_dimension_from_scratch/test_loss_training_curve.npy", test_loss_np)
+    np.save("../../Dataset/viseme_net_long_sequence_corrected_dimension_from_scratch/train_loss_training_curve.npy", train_loss_np)
     print("success")
 
 
