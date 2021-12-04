@@ -8,7 +8,7 @@ from collections import OrderedDict
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-from vowel_recognition_nodel import LSTM_vowel_recognizer, Custom_Dataset, build_confusion_matrix, accuracy
+from vowel_recognition_nodel import LSTM_vowel_recognizer, Custom_Dataset, build_confusion_matrix, accuracy, LSTM_vowel_recognizer_no_BN
 
 if __name__ == "__main__":
     if torch.cuda.is_available():
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     for m in model_names:
         model_path = model_loc + m
-        model = LSTM_vowel_recognizer()
+        model = LSTM_vowel_recognizer_no_BN()
         time = int(m.split("_")[-1][:-3])
         try:
             state_dict = torch.load(model_path)
