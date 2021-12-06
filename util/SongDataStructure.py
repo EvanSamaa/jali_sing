@@ -54,6 +54,8 @@ class Minimal_song_data_structure():
         self.silence_threshold = 0.007
         # obtain sound related data using Praat
         self.snd = parselmouth.Sound(audio_path_file)
+        self.sound_arr = librosa.load(audio_path_file, sr = 44100)[0]
+        self.sound_arr_interp = interp1d(self.snd.xs(), self.sound_arr)
         self.pitch = self.snd.to_pitch(time_step = self.dt, pitch_ceiling = self.pitch_ceiling)
         self.pitch_arr = self.pitch.selected_array["frequency"]
         self.pitch_arr[self.pitch_arr == 0] = np.nan
