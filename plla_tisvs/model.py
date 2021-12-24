@@ -16,11 +16,8 @@ from .model_utls import _Model
 class NoOp(nn.Module):
     def __init__(self):
         super().__init__()
-
     def forward(self, x):
         return x
-
-
 if utils._torchaudio_available():
     import torchaudio
 
@@ -68,16 +65,11 @@ if utils._torchaudio_available():
 
             # shape (nb_frames, nb_samples, nb_channels, nb_mfcc)
             return mfcc_f
-
-
-
-
 def smax(tensor, dim, gamma, keepdim=False):
     exp_gamma = torch.exp(tensor * gamma)
     sum_over_dim = torch.sum(exp_gamma, dim=dim, keepdim=keepdim)
     result = torch.log(sum_over_dim) / gamma
     return result
-
 class MatrixDiagonalIndexIterator:
     '''
     Custom iterator class to return successive diagonal indices of a matrix
@@ -143,8 +135,6 @@ def sakoe_chiba_band(i_list, j_list, m, n, bandwidth=1):
     i_scb, j_scb = zip(*[(i, j) for i,j in zip(i_list, j_list)
                          if abs(2*(i*(n-1) - j*(m-1))) < max(m, n)*(bandwidth+1)])
     return list(i_scb), list(j_scb)
-
-
 def dtw_matrix(scores, mode='faster', idx_to_skip=None):
     """
     Computes the accumulated score matrix by the "DTW forward operation"
@@ -175,8 +165,6 @@ def dtw_matrix(scores, mode='faster', idx_to_skip=None):
             max_values, idx = torch.max(torch.cat([d1, d2], dim=2), dim=2)
             dtw_matrix[:, n, m] = scores[:, n_m1, m_m1] + max_values
         return dtw_matrix[:, 1:N+1, 1:M+1]
-
-
 def optimal_alignment_path(matrix):
 
     # matrix is torch.tensor with size (1, sequence_length1, sequence_length2)
@@ -206,8 +194,6 @@ def optimal_alignment_path(matrix):
             break
     optimal_path_matrix[0:n+1, 0] = 1
     return optimal_path_matrix  # numpy array with shape (N, M)
-
-
 def pad_for_stft(signal, hop_length):
     # this function pads the given signal so that all samples are taken into account by the stft
     # input and output signal have shape (batch_size, nb_channels, nb_timesteps)
@@ -225,8 +211,6 @@ def pad_for_stft(signal, hop_length):
         padding = torch.zeros((nb_samples, nb_channels, pad_length)).to(device)
         padded_signal = torch.cat((signal, padding), dim=2)
         return padded_signal
-
-
 class STFT(nn.Module):
     def __init__(
         self,
@@ -270,8 +254,6 @@ class STFT(nn.Module):
 
         # shape (nb_samples, nb_channels, nb_bins, nb_frames, 2)
         return stft_f
-
-
 class Spectrogram(nn.Module):
     def __init__(
         self,
@@ -299,8 +281,6 @@ class Spectrogram(nn.Module):
 
         # permute output for LSTM convenience
         return stft_f.permute(2, 0, 1, 3)
-
-
 def index2one_hot(index_tensor, vocabulary_size):
     """
     Transforms index representation to one hot representation
@@ -494,8 +474,6 @@ class OpenUnmix(_Model):
         x = F.relu(x) * mix
 
         return x
-
-
 class InformedOpenUnmix3(_Model):
     """
     Open Unmix with an additional text encoder and attention mechanism
@@ -761,8 +739,6 @@ class InformedOpenUnmix3(_Model):
                 return x, alphas, scores
 
         return x
-
-
 class InformedOpenUnmix3NA2(_Model):
     """
     like InformedOpenUnmix3 but no attention mechanism. Alignment is given to the model as input
