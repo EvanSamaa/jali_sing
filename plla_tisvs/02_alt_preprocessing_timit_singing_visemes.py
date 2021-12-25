@@ -11,14 +11,20 @@ import timit_utils as tu
 import os
 import pickle
 import sys
+import json
+
+with open('./dicts/data_set_location.json') as f:
+    dataset_path_dict = json.load(f)
+dataset_path = os.path.join(dataset_path_dict["dataset_root"], 'instrumentals')
 
 # insert path to your TIMIT corpus here
-corpus_path = "/Volumes/Evan_disk/Speech_data_set/timit/data/"
+corpus_path = os.path.join(dataset_path_dict["dataset_root"], "timit/data/")
 corpus = tu.Corpus(corpus_path)
 
-path_for_saving_text_cmu_phone_files = '/Volumes/Evan_disk/Speech_data_set/cmu_phoneme_sequences_idx_open_unmix/'
+path_for_saving_text_cmu_phone_files = os.path.join(dataset_path_dict["dataset_root"], "viseme_sequences_idx_open_unmix")
 timit_training_set = corpus.train
 timit_test_set = corpus.test
+
 
 
 def get_timit_train_sentence(idx):
@@ -63,7 +69,7 @@ def get_timit_test_sentence(idx):
 
     return audio, words, phonemes
 # load timit_word2cmu_phonemes: a dictionary that translates the words of the TIMIT vocabulary to phonemes
-pickle_in = open('dicts/timit_word2cmu_phonemes.pickle', 'rb')
+pickle_in = open('./dicts/timit_word2cmu_phonemes.pickle', 'rb')
 timit_word2cmu_phonemes = pickle.load(pickle_in)
 
 # path_for_saving_text_cmu_phone_files = '../Datasets/TIMIT/cmu_phoneme_sequences_idx_open_unmix/'
@@ -73,25 +79,35 @@ cmu_vocabulary = ['#', '$', '%', '>', '-', 'AA', 'AE', 'AH', 'AO', 'AW', 'AY', '
                   'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG', 'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH', 'UH',
                   'UW', 'V', 'W', 'Y', 'Z', 'ZH']
 
-cmu_phoneme2idx = {}
-for idx, phoneme in enumerate(cmu_vocabulary):
-    cmu_phoneme2idx[phoneme] = idx
+visemes_vocabulary = ['#', '$', '%', '>', '-', 'M', 'BP', "Y", "J", "R", "FV", "LNTD", "M", "BP", "W", "Th", "GK",
+                     "ShChZh", "SZ", "A", "E", "I", "O", "U"]
 
-idx2cmu_phoneme = {}
-for idx, phoneme in enumerate(cmu_vocabulary):
-    idx2cmu_phoneme[idx] = phoneme
+CMU2VISEME = {"AA":"A", "AO":"A", "AY":"A", "AW":"A","AE":"E",
+              "EY":"E","UH":"A", "UW":"U","IH": "I","IY": "I","EH": "E","HH": "E","UH": "U","AH": "E",
+              "ER": "E","OW":"O","OY":"O","R":"R","D":"LNTD","T": "LNTD","L":"LNTD","N":"LNTD","NG":"LNTD",
+              "F":"FV","V":"FV","B":"BP","M":"M","P":"BP","CH":"ShChZh","SH":"ShChZh","ZH":"ShChZh",
+              "S": "SZ", "Z": "SZ","DH":"Th", "TH":"Th","G":"GK", "K":"GK","Y":"Y","JH":"J","W":"W", '#':'#',
+              '$':'$', '%':'%', '>':'>', '-':'-'}
+
+viseme2idx = {}
+for idx, phoneme in enumerate(visemes_vocabulary):
+    viseme2idx[phoneme] = idx
+
+idx2viseme = {}
+for idx, phoneme in enumerate(visemes_vocabulary):
+    viseme2idx[idx] = phoneme
 # print(idx2cmu_phoneme)
 
-pickle_out = open(os.path.join('dicts', "cmu_vocabulary.pickle"), "wb")
+pickle_out = open(os.path.join('dicts', "visemes_vocabulary.pickle"), "wb")
 pickle.dump(cmu_vocabulary, pickle_out)
 pickle_out.close()
 
-pickle_out = open(os.path.join('dicts', "cmu_phoneme2idx.pickle"), "wb")
-pickle.dump(cmu_phoneme2idx, pickle_out)
+pickle_out = open(os.path.join('dicts', "viseme2idx.pickle"), "wb")
+pickle.dump(viseme2idx, pickle_out)
 pickle_out.close()
 
-pickle_out = open(os.path.join('dicts', "idx2cmu_phoneme.pickle"), "wb")
-pickle.dump(idx2cmu_phoneme, pickle_out)
+pickle_out = open(os.path.join('dicts', "idx2viseme.pickle"), "wb")
+pickle.dump(idx2viseme, pickle_out)
 pickle_out.close()
 
 
@@ -113,7 +129,7 @@ for idx in range(4320):
     # remove the last space token
     phoneme_sequence = phoneme_sequence[:-1]
 
-    phoneme_idx = np.array([cmu_phoneme2idx[p] for p in phoneme_sequence])
+    phoneme_idx = np.array([viseme2idx[CMU2VISEME[p]] for p in phoneme_sequence])
 
     # add a silence token (idx=1) to start and end of character sequence
     phoneme_idx = np.pad(phoneme_idx, (1, 1), mode='constant', constant_values=1)
@@ -139,7 +155,7 @@ for idx in range(240):
     # remove the last space token
     phoneme_sequence = phoneme_sequence[:-1]
 
-    phoneme_idx = np.array([cmu_phoneme2idx[p] for p in phoneme_sequence])
+    phoneme_idx = np.array([viseme2idx[CMU2VISEME[p]] for p in phoneme_sequence])
 
     # add a silence token (idx=1) to start and end of character sequence
     phoneme_idx = np.pad(phoneme_idx, (1, 1), mode='constant', constant_values=1)
@@ -165,7 +181,7 @@ for idx in range(1344):
     # remove the last space token
     phoneme_sequence = phoneme_sequence[:-1]
 
-    phoneme_idx = np.array([cmu_phoneme2idx[p] for p in phoneme_sequence])
+    phoneme_idx = np.array([viseme2idx[CMU2VISEME[p]] for p in phoneme_sequence])
 
     # add a silence token (idx=1) to start and end of character sequence
     phoneme_idx = np.pad(phoneme_idx, (1, 1), mode='constant', constant_values=1)

@@ -103,7 +103,8 @@ def load_datasets(parser, args):
         parser.add_argument('--no-d', action='store_false', default=True)
         parser.add_argument('--no-random-track-mix', action='store_true', default=False)
         parser.add_argument('--red-phonemes', type=str, default=None)
-        parser.add_argument('--space-token-only', action='store_true', default=False)  # space token at start and end (no $)
+        parser.add_argument('--space-token-only', action='store_true',
+                            default=False)  # space token at start and end (no $)
         parser.add_argument('--add-silence', action='store_true', default=False)
         parser.add_argument('--snr', type=float, default=None)
         args = parser.parse_args()
@@ -137,8 +138,10 @@ def load_datasets(parser, args):
         parser.add_argument('--samplerate', type=int, default=16000)  # add sample rate to config
         parser.add_argument('--text-units', type=str, default='cmu_phonemes')
         parser.add_argument('--red-phonemes', type=str, default=None)
-        parser.add_argument('--fixed-length-timit', action='store_true', default=False)  # all exmaples 8.2s (much silence)
-        parser.add_argument('--space-token-only', action='store_true', default=False)  # space token at start and end (no $)
+        parser.add_argument('--fixed-length-timit', action='store_true',
+                            default=False)  # all exmaples 8.2s (much silence)
+        parser.add_argument('--space-token-only', action='store_true',
+                            default=False)  # space token at start and end (no $)
 
         args = parser.parse_args()
 
@@ -152,8 +155,10 @@ def load_datasets(parser, args):
         parser.add_argument('--samplerate', type=int, default=16000)  # add sample rate to config
         parser.add_argument('--text-units', type=str, default='cmu_phonemes')
         parser.add_argument('--red-phonemes', type=str, default=None)
-        parser.add_argument('--fixed-length-timit', action='store_true', default=False)  # all exmaples 8.2s (much silence)
-        parser.add_argument('--space-token-only', action='store_true', default=False)  # space token at start and end (no $)
+        parser.add_argument('--fixed-length-timit', action='store_true',
+                            default=False)  # all exmaples 8.2s (much silence)
+        parser.add_argument('--space-token-only', action='store_true',
+                            default=False)  # space token at start and end (no $)
         parser.add_argument('--add-silence', action='store_true', default=False)
 
         parser.add_argument('--n', action='store_false', default=True)
@@ -166,14 +171,14 @@ def load_datasets(parser, args):
         args = parser.parse_args()
 
         singing_train_data = MUSDBLyricsDataTrain(samplerate=args.samplerate,
-                                             text_units=args.text_units,
-                                             space_token_only=args.space_token_only,
-                                             add_silence=args.add_silence,
-                                             n=args.n,
-                                             x=args.x,
-                                             s=args.s,
-                                             d=args.d,
-                                             random_track_mixing=(not args.no_random_track_mix))
+                                                  text_units=args.text_units,
+                                                  space_token_only=args.space_token_only,
+                                                  add_silence=args.add_silence,
+                                                  n=args.n,
+                                                  x=args.x,
+                                                  s=args.s,
+                                                  d=args.d,
+                                                  random_track_mixing=(not args.no_random_track_mix))
 
         speech_train_data = TIMITMusicTrain(args.text_units, space_token_only=args.space_token_only,
                                             fixed_length=args.fixed_length_timit)
@@ -195,14 +200,15 @@ def load_datasets(parser, args):
         parser.add_argument('--snr', type=float, default=0.)
         parser.add_argument('--samplerate', type=int, default=16000)
         parser.add_argument('--text-units', type=str, default='cmu_phonemes')
-        parser.add_argument('--space-token-only', action='store_true', default=False)  # space token at start and end (no $)
+        parser.add_argument('--space-token-only', action='store_true',
+                            default=False)  # space token at start and end (no $)
         args = parser.parse_args()
 
         train_dataset = NUS(snr=args.snr, training=True)
 
         valid_data = MUSDBLyricsDataVal(samplerate=args.samplerate,
-                                           text_units=args.text_units,
-                                           space_token_only=args.space_token_only)
+                                        text_units=args.text_units,
+                                        space_token_only=args.space_token_only)
 
         # pick 48 examples from validation dataset
         indices = list(torch.randint(0, len(valid_data), (48,)).numpy())
@@ -214,7 +220,8 @@ def load_datasets(parser, args):
         parser.add_argument('--snr', type=float, default=0.)
         parser.add_argument('--samplerate', type=int, default=16000)
         parser.add_argument('--text-units', type=str, default='cmu_phonemes')
-        parser.add_argument('--space-token-only', action='store_true', default=False)  # space token at start and end (no $)
+        parser.add_argument('--space-token-only', action='store_true',
+                            default=False)  # space token at start and end (no $)
         args = parser.parse_args()
 
         train_dataset = NUSTrain(snr=args.snr)
@@ -268,7 +275,7 @@ class MUSDBLyricsDataTrain(torch.utils.data.Dataset):
         if alignment_from:
             self.path_to_attention_weights = 'evaluation/{}/musdb_alignments/train/'.format(alignment_from)
 
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
         if samplerate == 16000:
             self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics')
@@ -334,7 +341,7 @@ class MUSDBLyricsDataTrain(torch.utils.data.Dataset):
             if file[0] == 'x':
                 text_ = torch.tensor([3])
             else:
-                text_ = torch.ones((text.size()[0] + 2)) * 3 # add space token (index 3) to start and end
+                text_ = torch.ones((text.size()[0] + 2)) * 3  # add space token (index 3) to start and end
                 text_[1:-1] = text
         else:
             text_ = torch.ones((text.size()[0] + 2)) * 2
@@ -355,12 +362,12 @@ class MUSDBLyricsDataTrain(torch.utils.data.Dataset):
             if vocal_length < 11:
                 if torch.rand(1) > 0.5:
                     # at silence at end
-                    vocals = torch.cat([vocals, torch.zeros((2, 11* self.sample_rate - vocals_signal_length))], dim=1)
+                    vocals = torch.cat([vocals, torch.zeros((2, 11 * self.sample_rate - vocals_signal_length))], dim=1)
                     vocals_start = 0
                 else:
                     # add silence at start
-                    vocals = torch.cat([torch.zeros((2, 11* self.sample_rate - vocals_signal_length)), vocals], dim=1)
-                    vocals_start = 11* self.sample_rate - vocals_signal_length
+                    vocals = torch.cat([torch.zeros((2, 11 * self.sample_rate - vocals_signal_length)), vocals], dim=1)
+                    vocals_start = 11 * self.sample_rate - vocals_signal_length
 
         if self.target == 'accompaniment':
             accompaniment = torch.load(os.path.join(self.path_to_audio, 'accompaniment', file + '.pt'))
@@ -447,7 +454,7 @@ class MUSDBLyricsDataVal(torch.utils.data.Dataset):
 
         if alignment_from:
             self.path_to_attention_weights = 'evaluation/{}/musdb_alignments/val/'.format(alignment_from)
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
         # if samplerate == 16000:
         #     self.data_set_root = '../Datasets/MUSDB_w_lyrics'
@@ -508,7 +515,7 @@ class MUSDBLyricsDataVal(torch.utils.data.Dataset):
             if file[0] == 'x':
                 text_ = torch.tensor([3])
             else:
-                text_ = torch.ones((text.size()[0] + 2)) * 3 # add space token (index 3) to start and end
+                text_ = torch.ones((text.size()[0] + 2)) * 3  # add space token (index 3) to start and end
                 text_[1:-1] = text
         else:
             text_ = torch.ones((text.size()[0] + 2)) * 2
@@ -555,7 +562,7 @@ class MUSDBLyricsDataTest(torch.utils.data.Dataset):
                  alignment_from=None,
                  fake_alignment=False,
                  mix_snr=None):
-        
+
         super(MUSDBLyricsDataTest, self).__init__()
 
         self.sample_rate = samplerate
@@ -572,7 +579,7 @@ class MUSDBLyricsDataTest(torch.utils.data.Dataset):
         #     self.data_set_root = '../Datasets/MUSDB_w_lyrics'
         # elif samplerate == 44100:
         #     self.data_set_root = '../Datasets/MUSDB_w_lyrics441'
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
         if samplerate == 16000:
             self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics')
@@ -633,7 +640,7 @@ class MUSDBLyricsDataTest(torch.utils.data.Dataset):
             if file[0] == 'x':
                 text_ = torch.tensor([3])
             else:
-                text_ = torch.ones((text.size()[0] + 2)) * 3 # add space token (index 3) to start and end
+                text_ = torch.ones((text.size()[0] + 2)) * 3  # add space token (index 3) to start and end
                 text_[1:-1] = text
         else:
             text_ = torch.ones((text.size()[0] + 2)) * 2
@@ -656,14 +663,17 @@ class MUSDBLyricsDataTest(torch.utils.data.Dataset):
                 attention_weights[:, -1] = 1
             if self.mix_snr is not None:
                 mix, vocals, acc = self.mix_with_snr(self.mix_snr, vocals, acc)
-            test_track = {'name': file, 'mix': mix, 'vocals': vocals, 'accompaniment': acc, 'text': text_.type(torch.float32),
+            test_track = {'name': file, 'mix': mix, 'vocals': vocals, 'accompaniment': acc,
+                          'text': text_.type(torch.float32),
                           'attention_weights': attention_weights}
         else:
             if self.mix_snr is not None:
                 mix, vocals, acc = self.mix_with_snr(self.mix_snr, vocals, acc)
-            test_track = {'name': file, 'mix': mix, 'vocals': vocals, 'accompaniment': acc, 'text': text_.type(torch.float32)}
+            test_track = {'name': file, 'mix': mix, 'vocals': vocals, 'accompaniment': acc,
+                          'text': text_.type(torch.float32)}
 
         return test_track
+
 
 class TIMITMusicTrain(torch.utils.data.Dataset):
 
@@ -680,22 +690,23 @@ class TIMITMusicTrain(torch.utils.data.Dataset):
         self.space_token_only = space_token_only
 
         self.sample_rate = 16000  # TIMIT is only available at 16 kHz
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
 
         self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics')
 
         if text_units == 'cmu_phonemes':
-            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"], 'TIMIT/cmu_phoneme_sequences_idx_open_unmix/train')
+            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
+                                                       'cmu_phoneme_sequences_idx_open_unmix/train')
             self.vocabulary_size = 44
         if text_units == 'ones':
-            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"], 'TIMIT/cmu_phoneme_sequences_idx_open_unmix/train')
+            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
+                                                       'cmu_phoneme_sequences_idx_open_unmix/train')
             self.vocabulary_size = 44
-
 
         # music related
         # os.path.join(self.addr_dict["dataset_root"], "Music_instrumentals/train/torch_snippets")
-        path_to_music = os.path.join(self.addr_dict["dataset_root"], "Music_instrumentals/train/torch_snippets")
+        path_to_music = os.path.join(self.addr_dict["dataset_root"], "instrumentals/train/torch_snippets")
         self.list_of_music_files = sorted([f for f in glob.glob(path_to_music + "/*.pt", recursive=True)])
 
         self.mix_with_snr = MixSNR()
@@ -720,7 +731,7 @@ class TIMITMusicTrain(torch.utils.data.Dataset):
             padding_at_start = int(torch.randint(0, music_len - speech_len, size=(1,)))
             padding_at_end = music_len - padding_at_start - speech_len
             speech_padded = np.pad(array=speech.numpy(), pad_width=((0, 0), (padding_at_start, padding_at_end)),
-                               mode='constant', constant_values=0)
+                                   mode='constant', constant_values=0)
 
         else:
             speech_len = speech.size()[1]
@@ -748,9 +759,11 @@ class TIMITMusicTrain(torch.utils.data.Dataset):
 
         target_snr = torch.rand(size=(1,)) * (-8)
         mix, speech, music = self.mix_with_snr(target_snr, torch.from_numpy(speech_padded).type(torch.float32),
-                                        music, padding_at_start, speech_len)
+                                               music, padding_at_start, speech_len)
 
         return mix, speech, text
+
+
 class TIMITMusicVal(torch.utils.data.Dataset):
 
     def __init__(self,
@@ -765,20 +778,20 @@ class TIMITMusicVal(torch.utils.data.Dataset):
         self.space_token_only = space_token_only
 
         self.sample_rate = 16000  # TIMIT is only available at 16 kHz
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
 
         if text_units == 'cmu_phonemes':
             self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
-                                                       'TIMIT/cmu_phoneme_sequences_idx_open_unmix/val')
+                                                       'cmu_phoneme_sequences_idx_open_unmix/val')
             self.vocabulary_size = 44
         if text_units == 'ones':
             self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
-                                                       'TIMIT/cmu_phoneme_sequences_idx_open_unmix/val')
+                                                       'cmu_phoneme_sequences_idx_open_unmix/val')
             self.vocabulary_size = 44
 
         # music related
-        path_to_music = os.path.join(self.addr_dict["dataset_root"], "Music_instrumentals/train/torch_snippets")
+        path_to_music = os.path.join(self.addr_dict["dataset_root"], "instrumentals/train/torch_snippets")
         self.list_of_music_files = sorted([f for f in glob.glob(path_to_music + "/*.pt", recursive=True)])
 
         self.mix_with_snr = MixSNR()
@@ -801,7 +814,7 @@ class TIMITMusicVal(torch.utils.data.Dataset):
             padding_at_start = int(torch.randint(0, music_len - speech_len, size=(1,)))
             padding_at_end = music_len - padding_at_start - speech_len
             speech_padded = np.pad(array=speech.numpy(), pad_width=((0, 0), (padding_at_start, padding_at_end)),
-                               mode='constant', constant_values=0)
+                                   mode='constant', constant_values=0)
 
         else:
             speech_len = speech.size()[1]
@@ -823,7 +836,7 @@ class TIMITMusicVal(torch.utils.data.Dataset):
 
         target_snr = -5
         mix, speech, music = self.mix_with_snr(target_snr, torch.from_numpy(speech_padded).type(torch.float32),
-                                        music, padding_at_start, speech_len)
+                                               music, padding_at_start, speech_len)
 
         return mix, speech, text
 
@@ -840,7 +853,7 @@ class TIMITMusicTest(torch.utils.data.Dataset):
         self.fixed_length = fixed_length
         self.text_units = text_units
         self.space_token_only = space_token_only
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
         self.sample_rate = 16000  # TIMIT is only available at 16 kHz
         if text_units == 'cmu_phonemes':
@@ -864,7 +877,7 @@ class TIMITMusicTest(torch.utils.data.Dataset):
     def __getitem__(self, idx):
 
         # get speech file
-        speech = torch.load(os.path.join(self.addr_dict["dataset_root"],'TIMIT_torch/test/{}.pt'.format(idx)))
+        speech = torch.load(os.path.join(self.addr_dict["dataset_root"], 'TIMIT_torch/test/{}.pt'.format(idx)))
 
         # randomly choose a music file from list and load a snippet with speech length + x
         music_idx = idx % len(self.list_of_music_files)
@@ -879,7 +892,7 @@ class TIMITMusicTest(torch.utils.data.Dataset):
             padding_at_start = int(torch.randint(0, music_len - speech_len, size=(1,)))
             padding_at_end = music_len - padding_at_start - speech_len
             speech_padded = np.pad(array=speech.numpy(), pad_width=((0, 0), (padding_at_start, padding_at_end)),
-                                mode='constant', constant_values=0)
+                                   mode='constant', constant_values=0)
         else:
             speech_len = speech.size()[1]
             music_len = music.size()[1]
@@ -901,7 +914,7 @@ class TIMITMusicTest(torch.utils.data.Dataset):
 
         target_snr = -5
         mix, speech, music = self.mix_with_snr(target_snr, torch.from_numpy(speech_padded).type(torch.float32),
-                                        music, padding_at_start, speech_len)
+                                               music, padding_at_start, speech_len)
 
         name = music_file.split('/')[-1][:-3] + str(idx)
 
@@ -913,28 +926,27 @@ class TIMITMusicTest(torch.utils.data.Dataset):
 class Hansen(torch.utils.data.Dataset):
 
     def __init__(self):
-
         super(Hansen).__init__()
 
         self.sample_rate = 16000
-        pickle_in = open('dicts/cmu_phoneme2idx.pickle', 'rb')
+        pickle_in = open('plla_tisvs/dicts/cmu_phoneme2idx.pickle', 'rb')
         cmu_phoneme2idx = pickle.load(pickle_in)
-        self.idx2cmu_phoneme = {value:key for key, value in cmu_phoneme2idx.items()}
+        self.idx2cmu_phoneme = {value: key for key, value in cmu_phoneme2idx.items()}
 
-
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
 
-
-        self.audio_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'/HansensDataset/mixed/pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'/HansensDataset/wordonsets/*.tsv')))
-        self.text_phoneme_idx_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],' /HansensDataset/lyrics_phoneme_idx_pytorch/*.pt')))
+        self.audio_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], '/HansensDataset/mixed/pytorch_16k/*.pt')))
+        self.text_onset_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], '/HansensDataset/wordonsets/*.tsv')))
+        self.text_phoneme_idx_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], ' /HansensDataset/lyrics_phoneme_idx_pytorch/*.pt')))
 
     def __len__(self):
-        return  len(self.audio_files)
+        return len(self.audio_files)
 
     def __getitem__(self, idx):
-
         audio_file = self.audio_files[idx]
         text_onset_file = self.text_onset_files[idx]
         text_phoneme_idx_file = self.text_phoneme_idx_files[idx]
@@ -965,29 +977,31 @@ class Hansen(torch.utils.data.Dataset):
 
         return test_track
 
+
 class Jamendo(torch.utils.data.Dataset):
 
     def __init__(self):
-
         super(Jamendo).__init__()
 
         self.sample_rate = 16000
-        pickle_in = open('dicts/cmu_phoneme2idx.pickle', 'rb')
+        pickle_in = open('plla_tisvs/dicts/cmu_phoneme2idx.pickle', 'rb')
         cmu_phoneme2idx = pickle.load(pickle_in)
-        self.idx2cmu_phoneme = {value:key for key, value in cmu_phoneme2idx.items()}
+        self.idx2cmu_phoneme = {value: key for key, value in cmu_phoneme2idx.items()}
 
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
 
-        self.audio_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'jamendolyrics/audio_pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'jamendolyrics/annotations/*.txt')))
-        self.text_phoneme_idx_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'jamendolyrics/lyrics_phoneme_idx_pytorch/*.pt')))
+        self.audio_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'jamendolyrics/audio_pytorch_16k/*.pt')))
+        self.text_onset_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'jamendolyrics/annotations/*.txt')))
+        self.text_phoneme_idx_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'jamendolyrics/lyrics_phoneme_idx_pytorch/*.pt')))
 
     def __len__(self):
-        return  len(self.audio_files)
+        return len(self.audio_files)
 
     def __getitem__(self, idx):
-
         audio_file = self.audio_files[idx]
         text_onset_file = self.text_onset_files[idx]
         text_phoneme_idx_file = self.text_phoneme_idx_files[idx]
@@ -1013,6 +1027,7 @@ class Jamendo(torch.utils.data.Dataset):
 
         return test_track
 
+
 class NUS(torch.utils.data.Dataset):
 
     def __init__(self, acapella=False, snr=5, training=False):
@@ -1025,7 +1040,7 @@ class NUS(torch.utils.data.Dataset):
         """
         super(NUS).__init__()
 
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
 
         self.sample_rate = 16000
@@ -1033,15 +1048,20 @@ class NUS(torch.utils.data.Dataset):
         self.snr = snr  # ratio to mix vocals and music
         self.training = training
 
-        self.audio_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'nus-smc-corpus_48/audio_pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'nus-smc-corpus_48/*/sing/*.txt')))
-        self.text_phoneme_idx_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'nus-smc-corpus_48/lyrics_phoneme_idx_pytorch/*.pt')))
+        self.audio_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/audio_pytorch_16k/*.pt')))
+        self.text_onset_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/*/sing/*.txt')))
+        self.text_phoneme_idx_files = sorted(glob.glob(
+            os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/lyrics_phoneme_idx_pytorch/*.pt')))
         if not acapella:
             # we excluded 'PR - Oh No' and 'Hollow_Ground_-_Ill_Fate' because they were shorter than the vocals
-            self.music_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'MUSDB_accompaniments/test/whole_songs/*.pt')))
+            self.music_files = sorted(
+                glob.glob(os.path.join(self.addr_dict["dataset_root"], 'MUSDB_accompaniments/test/whole_songs/*.pt')))
             self.mix_snr = MixSNR()
+
     def __len__(self):
-        return  len(self.audio_files)
+        return len(self.audio_files)
 
     def __getitem__(self, idx):
 
@@ -1111,22 +1131,25 @@ class NUSTrain(torch.utils.data.Dataset):
 
         super(NUS).__init__()
 
-        with open('./dicts/data_set_location.json') as f:
+        with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
 
         self.sample_rate = 16000
 
-        self.audio_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/audio_pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'nus-smc-corpus_48/*/sing/*.txt')))
-        self.text_phoneme_idx_files = sorted(glob.glob(os.path.join(self.addr_dict["dataset_root"],'nus-smc-corpus_48/lyrics_phoneme_idx_pytorch/*.pt')))
-        #self.music_files = sorted(glob.glob('../Datasets/MUSDB_accompaniments/test/whole_songs/*.pt'))
-        path_to_music = os.path.join(self.addr_dict["dataset_root"],'Music_instrumentals/train/torch_snippets')
+        self.audio_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/audio_pytorch_16k/*.pt')))
+        self.text_onset_files = sorted(
+            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/*/sing/*.txt')))
+        self.text_phoneme_idx_files = sorted(glob.glob(
+            os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/lyrics_phoneme_idx_pytorch/*.pt')))
+        # self.music_files = sorted(glob.glob('../Datasets/MUSDB_accompaniments/test/whole_songs/*.pt'))
+        path_to_music = os.path.join(self.addr_dict["dataset_root"], 'Music_instrumentals/train/torch_snippets')
         self.music_files = sorted([f for f in glob.glob(path_to_music + "/*.pt", recursive=True)])
         self.mix_snr = MixSNR()
         self.snr = snr
 
     def __len__(self):
-        return  len(self.audio_files)
+        return len(self.audio_files)
 
     def __getitem__(self, idx):
 
@@ -1141,7 +1164,6 @@ class NUSTrain(torch.utils.data.Dataset):
         musix_idx = torch.randint(0, len(self.music_files), (1,))
         music = torch.load(self.music_files[musix_idx])[0, :]
         music_length = music.size(0)
-
 
         true_onsets = []
         with open(text_onset_file) as file:
@@ -1172,7 +1194,7 @@ class NUSTrain(torch.utils.data.Dataset):
         vocals = vocals[start_sample:end_sample]
         text = text_phoneme_idx[start_onset_idx:end_onset_idx]
 
-        text = torch.nn.functional.pad(text, pad=(1,1), mode='constant', value=1)  # add silence token at start and end
+        text = torch.nn.functional.pad(text, pad=(1, 1), mode='constant', value=1)  # add silence token at start and end
 
         vocals_length = vocals.size(0)
         if vocals_length < music_length:
@@ -1193,7 +1215,6 @@ class NUSTrain(torch.utils.data.Dataset):
 
 
 def collate_fn(sample_list):
-
     # make it work with and without text as third data set output
 
     batch_size = len(sample_list)
@@ -1222,7 +1243,6 @@ def collate_fn(sample_list):
         # shape mix, vocals: (batch_size, nb_channels, nb_time_steps)
         # shape side_info: (batch_size, nb_elements)
         return mix, vocals, side_info
-
 
 
 if __name__ == "__main__":
@@ -1266,6 +1286,7 @@ if __name__ == "__main__":
         total_training_duration += x.shape[1] / train_dataset.sample_rate
         if args.save:
             import soundfile as sf
+
             sf.write(
                 "test/" + str(k) + 'x.wav',
                 x.detach().numpy().T,
