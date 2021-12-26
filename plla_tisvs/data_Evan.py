@@ -819,7 +819,7 @@ class TIMITMusicVal(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         # get speech file
-        os.path.join(self.addr_dict["dataset_root"], 'TIMIT_torch/val/{}.pt'.format(idx))
+        speech = torch.load(os.path.join(self.addr_dict["dataset_root"], 'TIMIT_torch/val/{}.pt'.format(idx)))
 
         # randomly choose a music file from list and load a snippet with speech length + x
         music_file = self.list_of_music_files[idx]
