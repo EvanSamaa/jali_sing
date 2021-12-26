@@ -107,7 +107,7 @@ def get_statistics(args, dataset):
     # returns an iterator which acts exactly like the original iterable,
     # but prints a dynamically updating progressbar every time a value is requested.
     pbar = tqdm.tqdm(range(len(dataset_scaler)), disable=args.quiet)
-
+    print(dataset_scaler)
     for ind in pbar:
         out = dataset_scaler[ind]  # x is mix and y is target source in time domain, z is text and ignored here
         x = out[0]
