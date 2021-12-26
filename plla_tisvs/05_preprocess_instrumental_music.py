@@ -16,6 +16,10 @@ if __name__ == "__main__":
     files = os.listdir(dataset_path)
     lengthOfSegment = 16000 * 8
     for file in files:
+        if file[-3:] == "mp3":
+            pass
+        else:
+            continue
         file_path = os.path.join(dataset_path, file)
         arr, sr = librosa.load(file_path, sr=16000)
         arr = (arr - arr.mean())/arr.std()
