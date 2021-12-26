@@ -256,7 +256,7 @@ def main():
     train_args_dict = vars(args)
     train_args_dict['max_bin'] = int(max_bin)  # added to config
     train_args_dict['vocabulary_size'] = valid_dataset.vocabulary_size  # added to config
-
+    print("vocab size is:", valid_dataset.vocabulary_size)
     train_params_dict = copy.deepcopy(vars(args))  # return args as dictionary with no influence on args
 
     # add to parameters for model loading but not to config file
