@@ -19,6 +19,7 @@ import torch
 import os
 import pickle
 import yaml
+import json
 # ignore warning about unsafe loaders in pyYAML 5.1 (used in musdb)
 # https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
 yaml.warnings({'YAMLLoadWarning': False})
