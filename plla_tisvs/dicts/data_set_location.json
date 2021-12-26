@@ -1,3 +1,4 @@
 {
-  "dataset_root":"E:/MASC/Speech_data_set/"
+  "dataset_root":"/scratch/year1/Evan",
+  "dataset_mac":"/Volumes/EVAN_DISK/MASC/Speech_data_set"
 }

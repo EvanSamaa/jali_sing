@@ -293,6 +293,9 @@ class MUSDBLyricsDataTrain(torch.utils.data.Dataset):
         if text_units == 'ones':
             self.path_to_text = os.path.join(self.data_set_root, 'train/text_cmu_phonemes/')
             self.vocabulary_size = 44
+        if text_units == "visemes":
+            self.path_to_text = os.path.join(self.data_set_root, 'train/text_visemes/')
+            self.vocabulary_size = 24
 
         self.path_to_audio = os.path.join(self.data_set_root, 'train/audio')
 
@@ -471,6 +474,9 @@ class MUSDBLyricsDataVal(torch.utils.data.Dataset):
         if text_units == 'ones':
             self.path_to_text = os.path.join(self.data_set_root, 'val/text_cmu_phonemes/')
             self.vocabulary_size = 44
+        if text_units == "visemes":
+            self.path_to_text = os.path.join(self.data_set_root, 'val/text_visemes/')
+            self.vocabulary_size = 24
 
         self.path_to_audio = os.path.join(self.data_set_root, 'val/audio')
 
@@ -525,6 +531,7 @@ class MUSDBLyricsDataVal(torch.utils.data.Dataset):
             text_ = torch.ones_like(text_)
         if self.text_units == 'voice_activity':
             text_[text_ != 3] = 5
+
 
         # vocals in time domain
         vocals = torch.load(os.path.join(self.path_to_audio, 'vocals', file + '.pt'))
@@ -595,6 +602,9 @@ class MUSDBLyricsDataTest(torch.utils.data.Dataset):
         if text_units == 'ones':
             self.path_to_text = os.path.join(self.data_set_root, 'test/text_cmu_phonemes/')
             self.vocabulary_size = 44
+        if text_units == "visemes":
+            self.path_to_text = os.path.join(self.data_set_root, 'test/text_visemes/')
+            self.vocabulary_size = 24
 
         self.path_to_audio = os.path.join(self.data_set_root, 'test/audio')
 
@@ -703,6 +713,11 @@ class TIMITMusicTrain(torch.utils.data.Dataset):
             self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
                                                        'cmu_phoneme_sequences_idx_open_unmix/train')
             self.vocabulary_size = 44
+        if text_units == 'visemes':
+            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
+                                                       'viseme_sequences_idx_open_unmix/train')
+            self.vocabulary_size = 24
+
 
         # music related
         # os.path.join(self.addr_dict["dataset_root"], "Music_instrumentals/train/torch_snippets")
@@ -789,7 +804,10 @@ class TIMITMusicVal(torch.utils.data.Dataset):
             self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
                                                        'cmu_phoneme_sequences_idx_open_unmix/val')
             self.vocabulary_size = 44
-
+        if text_units == 'visemes':
+            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
+                                                       'viseme_sequences_idx_open_unmix/val')
+            self.vocabulary_size = 24
         # music related
         path_to_music = os.path.join(self.addr_dict["dataset_root"], "instrumentals/train/torch_snippets")
         self.list_of_music_files = sorted([f for f in glob.glob(path_to_music + "/*.pt", recursive=True)])
@@ -864,11 +882,13 @@ class TIMITMusicTest(torch.utils.data.Dataset):
             self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
                                                        'TIMIT/cmu_phoneme_sequences_idx_open_unmix/test')
             self.vocabulary_size = 44
-
+        if text_units == 'visemes':
+            self.path_to_text_sequences = os.path.join(self.addr_dict["dataset_root"],
+                                                       'viseme_sequences_idx_open_unmix/test')
+            self.vocabulary_size = 24
         # music related
         path_to_music = os.path.join(self.addr_dict["dataset_root"], 'Music_instrumentals/test/torch_snippets')
         self.list_of_music_files = sorted([f for f in glob.glob(path_to_music + "/*.pt", recursive=True)])
-
         self.mix_with_snr = MixSNR()
 
     def __len__(self):
@@ -921,297 +941,6 @@ class TIMITMusicTest(torch.utils.data.Dataset):
         test_track = {'name': name, 'mix': mix, 'vocals': speech, 'accompaniment': music, 'text': text}
 
         return test_track
-
-
-class Hansen(torch.utils.data.Dataset):
-
-    def __init__(self):
-        super(Hansen).__init__()
-
-        self.sample_rate = 16000
-        pickle_in = open('plla_tisvs/dicts/cmu_phoneme2idx.pickle', 'rb')
-        cmu_phoneme2idx = pickle.load(pickle_in)
-        self.idx2cmu_phoneme = {value: key for key, value in cmu_phoneme2idx.items()}
-
-        with open('plla_tisvs/dicts/data_set_location.json') as f:
-            self.addr_dict = json.load(f)
-
-        self.audio_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], '/HansensDataset/mixed/pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], '/HansensDataset/wordonsets/*.tsv')))
-        self.text_phoneme_idx_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], ' /HansensDataset/lyrics_phoneme_idx_pytorch/*.pt')))
-
-    def __len__(self):
-        return len(self.audio_files)
-
-    def __getitem__(self, idx):
-        audio_file = self.audio_files[idx]
-        text_onset_file = self.text_onset_files[idx]
-        text_phoneme_idx_file = self.text_phoneme_idx_files[idx]
-
-        name = audio_file.split('/')[-1][:-3]
-
-        audio = torch.load(audio_file)
-        text_phoneme_idx = torch.load(text_phoneme_idx_file)
-        text_phoneme_idx[0] = 3
-        text_phoneme_idx[-1] = 3
-
-        text_symb = [self.idx2cmu_phoneme[idx] for idx in list(text_phoneme_idx.numpy())]
-
-        true_onsets = []
-        true_offsets = []
-
-        with open(text_onset_file) as tsvfile:
-            reader = csv.reader(tsvfile, delimiter='\t')
-            for row in reader:
-                onset = np.float32((row[0].replace(',', '.')))
-                true_onsets.append(onset)
-                offset = np.float32(row[1].replace(',', '.'))
-                true_offsets.append(offset)
-
-        test_track = {'name': name, 'audio': audio, 'text_phoneme_symbols': text_symb,
-                      'text_phoneme_idx': text_phoneme_idx,
-                      'true_onsets': true_onsets, 'true_offsets': true_offsets}
-
-        return test_track
-
-
-class Jamendo(torch.utils.data.Dataset):
-
-    def __init__(self):
-        super(Jamendo).__init__()
-
-        self.sample_rate = 16000
-        pickle_in = open('plla_tisvs/dicts/cmu_phoneme2idx.pickle', 'rb')
-        cmu_phoneme2idx = pickle.load(pickle_in)
-        self.idx2cmu_phoneme = {value: key for key, value in cmu_phoneme2idx.items()}
-
-        with open('plla_tisvs/dicts/data_set_location.json') as f:
-            self.addr_dict = json.load(f)
-
-        self.audio_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'jamendolyrics/audio_pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'jamendolyrics/annotations/*.txt')))
-        self.text_phoneme_idx_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'jamendolyrics/lyrics_phoneme_idx_pytorch/*.pt')))
-
-    def __len__(self):
-        return len(self.audio_files)
-
-    def __getitem__(self, idx):
-        audio_file = self.audio_files[idx]
-        text_onset_file = self.text_onset_files[idx]
-        text_phoneme_idx_file = self.text_phoneme_idx_files[idx]
-
-        name = audio_file.split('/')[-1][:-3]
-
-        audio = torch.load(audio_file)
-        text_phoneme_idx = torch.load(text_phoneme_idx_file)
-
-        text_symb = [self.idx2cmu_phoneme[idx] for idx in list(text_phoneme_idx.numpy())]
-
-        true_onsets = []
-
-        with open(text_onset_file) as file:
-            lines = file.readlines()
-            for line in lines:
-                onset = np.float32((line.replace('\n', '')))
-                true_onsets.append(onset)
-
-        test_track = {'name': name, 'audio': audio, 'text_phoneme_symbols': text_symb,
-                      'text_phoneme_idx': text_phoneme_idx,
-                      'true_onsets': true_onsets}
-
-        return test_track
-
-
-class NUS(torch.utils.data.Dataset):
-
-    def __init__(self, acapella=False, snr=5, training=False):
-        """
-
-        Args:
-            acapella: If True, the vocals will not be mixed with music
-            snr: mixing SNR in dB if not acapella
-            training: If True, the examples will be cut into ~6 second long segments which are randomly selected
-        """
-        super(NUS).__init__()
-
-        with open('plla_tisvs/dicts/data_set_location.json') as f:
-            self.addr_dict = json.load(f)
-
-        self.sample_rate = 16000
-        self.acapella = acapella
-        self.snr = snr  # ratio to mix vocals and music
-        self.training = training
-
-        self.audio_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/audio_pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/*/sing/*.txt')))
-        self.text_phoneme_idx_files = sorted(glob.glob(
-            os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/lyrics_phoneme_idx_pytorch/*.pt')))
-        if not acapella:
-            # we excluded 'PR - Oh No' and 'Hollow_Ground_-_Ill_Fate' because they were shorter than the vocals
-            self.music_files = sorted(
-                glob.glob(os.path.join(self.addr_dict["dataset_root"], 'MUSDB_accompaniments/test/whole_songs/*.pt')))
-            self.mix_snr = MixSNR()
-
-    def __len__(self):
-        return len(self.audio_files)
-
-    def __getitem__(self, idx):
-
-        audio_file = self.audio_files[idx]
-        text_onset_file = self.text_onset_files[idx]
-        text_phoneme_idx_file = self.text_phoneme_idx_files[idx]
-
-        name = audio_file.split('/')[-1][:-3]
-
-        audio = torch.load(audio_file)
-        if not self.acapella:
-            music = torch.load(self.music_files[idx])
-            vocals_length = audio.size(0)
-            music = music[:vocals_length]
-            audio, vocals, music = self.mix_snr(self.snr, audio.unsqueeze(0), music.unsqueeze(0))
-            # audio = vocals + music
-            audio = audio.squeeze(0)
-            vocals = vocals.squeeze(0)
-            name = name + self.music_files[idx].split('/')[-1][:-3]
-
-        text_phoneme_idx = torch.load(text_phoneme_idx_file)
-
-        true_onsets = []
-        with open(text_onset_file) as file:
-            lines = file.readlines()
-            for line in lines:
-                annotation = line.split(' ')
-                if annotation[-1].replace('\n', '') == 'sp':
-                    # ignore duration-less word boundary annotation
-                    continue
-                onset = np.float32((annotation[0]))
-                true_onsets.append(onset)
-
-        if name[:6] == 'ADIZ09':
-            # correct wrong annotations for training
-            true_onsets = [x + 2.8 for x in true_onsets]
-
-        if self.training:
-            # cut out a random segment of ~ 6 seconds length
-
-            # find the latest onset which is 6 seconds before the last onset
-            max_start = np.where(true_onsets <= true_onsets[-1] - 6)[0][-1]
-
-            start_onset_idx = torch.randint(0, max_start, (1,))
-            start_sample = int(true_onsets[start_onset_idx] * self.sample_rate)
-
-            # find onset that is ~6 seconds after start onset
-            end_onset_idx = np.where(true_onsets > true_onsets[start_onset_idx] + 6)[0][0]
-            end_sample = int(true_onsets[end_onset_idx] * self.sample_rate)
-
-            audio = audio[start_sample:end_sample][None, :]
-            vocals = vocals[start_sample:end_sample][None, :]
-            text = text_phoneme_idx[start_onset_idx:end_onset_idx]
-
-            return audio, vocals, text
-
-        test_track = {'name': name, 'audio': audio,
-                      'text_phoneme_idx': text_phoneme_idx,
-                      'true_onsets': true_onsets}
-
-        return test_track
-
-
-class NUSTrain(torch.utils.data.Dataset):
-
-    def __init__(self, snr=0):
-
-        super(NUS).__init__()
-
-        with open('plla_tisvs/dicts/data_set_location.json') as f:
-            self.addr_dict = json.load(f)
-
-        self.sample_rate = 16000
-
-        self.audio_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/audio_pytorch_16k/*.pt')))
-        self.text_onset_files = sorted(
-            glob.glob(os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/*/sing/*.txt')))
-        self.text_phoneme_idx_files = sorted(glob.glob(
-            os.path.join(self.addr_dict["dataset_root"], 'nus-smc-corpus_48/lyrics_phoneme_idx_pytorch/*.pt')))
-        # self.music_files = sorted(glob.glob('../Datasets/MUSDB_accompaniments/test/whole_songs/*.pt'))
-        path_to_music = os.path.join(self.addr_dict["dataset_root"], 'Music_instrumentals/train/torch_snippets')
-        self.music_files = sorted([f for f in glob.glob(path_to_music + "/*.pt", recursive=True)])
-        self.mix_snr = MixSNR()
-        self.snr = snr
-
-    def __len__(self):
-        return len(self.audio_files)
-
-    def __getitem__(self, idx):
-
-        audio_file = self.audio_files[idx]
-        text_onset_file = self.text_onset_files[idx]
-        text_phoneme_idx_file = self.text_phoneme_idx_files[idx]
-        name = audio_file.split('/')[-1][:-3]
-        vocals = torch.load(audio_file)
-        text_phoneme_idx = torch.load(text_phoneme_idx_file)
-
-        # load a music signal
-        musix_idx = torch.randint(0, len(self.music_files), (1,))
-        music = torch.load(self.music_files[musix_idx])[0, :]
-        music_length = music.size(0)
-
-        true_onsets = []
-        with open(text_onset_file) as file:
-            lines = file.readlines()
-            for line in lines:
-                annotation = line.split(' ')
-                if annotation[-1].replace('\n', '') == 'sp':
-                    # ignore duration-less word boundary annotation
-                    continue
-                onset = np.float32((annotation[0]))
-                true_onsets.append(onset)
-
-        if name[:6] == 'ADIZ09':
-            # correct wrong annotations
-            true_onsets = [x + 2.8 for x in true_onsets]
-
-        # cut out a random segment of ~ 6 seconds length from vocals and cut text info accordingly
-        # find the latest onset which is 6 seconds before the last onset
-        max_start = np.where(true_onsets <= true_onsets[-1] - 6)[0][-1]
-
-        start_onset_idx = torch.randint(0, max_start, (1,))
-        start_sample = int(true_onsets[start_onset_idx] * self.sample_rate)
-
-        # find onset that is ~6 seconds after start onset
-        end_onset_idx = np.where(true_onsets > true_onsets[start_onset_idx] + 6)[0][0]
-        end_sample = int(true_onsets[end_onset_idx] * self.sample_rate)
-
-        vocals = vocals[start_sample:end_sample]
-        text = text_phoneme_idx[start_onset_idx:end_onset_idx]
-
-        text = torch.nn.functional.pad(text, pad=(1, 1), mode='constant', value=1)  # add silence token at start and end
-
-        vocals_length = vocals.size(0)
-        if vocals_length < music_length:
-            padding_at_start = int(torch.randint(0, music_length - vocals_length, size=(1,)))
-            padding_at_end = music_length - padding_at_start - vocals_length
-            vocals = torch.nn.functional.pad(vocals, pad=(padding_at_start, padding_at_end))
-        elif vocals_length > music_length:
-            padding_at_start = int(torch.randint(0, vocals_length - music_length, size=(1,)))
-            padding_at_end = vocals_length - padding_at_start - music_length
-            music = torch.nn.functional.pad(music, pad=(padding_at_start, padding_at_end))
-
-        mix, vocals, music = self.mix_snr(self.snr, vocals.unsqueeze(0), music.unsqueeze(0),
-                                          vocals_start=padding_at_start, vocals_length=vocals_length)
-
-        name = name + self.music_files[idx].split('/')[-1][:-3]
-
-        return mix, vocals, text
 
 
 def collate_fn(sample_list):

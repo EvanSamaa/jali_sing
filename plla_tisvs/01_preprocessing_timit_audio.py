@@ -3,18 +3,20 @@
 import numpy as np
 import torch
 import timit_utils as tu
-
+import json
 import os
 
 # insert the path to your TIMIT corpus here
-corpus_path = "/Volumes/Evan_disk/Speech_data_set/timit/data/"
-corpus = tu.Corpus(corpus_path)
 
+with open('./dicts/data_set_location.json') as f:
+    dataset_path_dict = json.load(f)
+corpus_path = os.path.join(dataset_path_dict["dataset_root"], 'timit/data/')
+print(corpus_path)
+corpus = tu.Corpus(corpus_path)
 timit_training_set = corpus.train
 timit_test_set = corpus.test
 
-path_for_saving_audio = '/Volumes/Evan_disk/Speech_data_set/timit_torch'
-
+path_for_saving_audio = os.path.join(dataset_path_dict["dataset_root"], 'timit_torch/')
 
 def get_timit_train_sentence(idx):
     # the training set for this project comprises the first 4320 sentences of the TIMIT training partition

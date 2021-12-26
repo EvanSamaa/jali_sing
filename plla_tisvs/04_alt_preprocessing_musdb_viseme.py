@@ -6,10 +6,13 @@ import os
 import glob
 
 import torch
+import json
 # A[2]
 
 # should be equal to path_to_save_data in 03_preprocessing_musdb_audio_txt_char.py
-path_to_dataset = '/Volumes/Evan_disk/Speech_data_set/musdb_with_lyrics'
+with open('./dicts/data_set_location.json') as f:
+    dataset_path_dict = json.load(f)
+path_to_dataset = os.path.join(dataset_path_dict["dataset_root"], 'musdb_with_lyrics/')
 
 # read text file with words and correspoding phonemes, make dict musdb_word2cmu_phoneme
 words2cmu_phonemes_file = open('dicts/MUSDB_words_CMU_phonemes.txt')
@@ -64,12 +67,28 @@ extra_cmu_idx2phoneme = pickle.load(pickle_in)
 pickle_in = open('dicts/cmu_symbols2phones.pickle', 'rb')
 cmu_symbols2phones = pickle.load(pickle_in)
 
+pickle_in = open('dicts/idx2viseme.pickle', 'rb')
+idx2viseme = pickle.load(pickle_in)
+pickle_in = open('dicts/viseme2idx.pickle', 'rb')
+viseme2idx = pickle.load(pickle_in)
+pickle_in = open('dicts/idx2viseme.pickle', 'rb')
+idx2viseme = pickle.load(pickle_in)
+CMU2VISEME = {"AA":"A", "AO":"A", "AY":"A", "AW":"A","AE":"E",
+              "EY":"E","UH":"A", "UW":"U","IH": "I","IY": "I","EH": "E","HH": "E","UH": "U","AH": "E",
+              "ER": "E","OW":"O","OY":"O","R":"R","D":"LNTD","T": "LNTD","L":"LNTD","N":"LNTD","NG":"LNTD",
+              "F":"FV","V":"FV","B":"BP","M":"M","P":"BP","CH":"ShChZh","SH":"ShChZh","ZH":"ShChZh",
+              "S": "SZ", "Z": "SZ","DH":"Th", "TH":"Th","G":"GK", "K":"GK","Y":"Y","JH":"J","W":"W", '#':'#',
+              '$':'$', '%':'%', '>':'>', '-':'-'}
+
+
+
+
 # -----------------------------------------------------------------------------------------------------------
 
 # go through dataset in train/text, val/text, test/text and load text files
 for subset in ['train', 'val', 'test']:
 
-    path_to_save_cmu_phonemes = os.path.join(path_to_dataset, subset, 'text_cmu_phonemes')
+    path_to_save_cmu_phonemes = os.path.join(path_to_dataset, subset, 'text_visemes')
     if not os.path.isdir(path_to_save_cmu_phonemes):
         os.makedirs(path_to_save_cmu_phonemes)
 
@@ -94,8 +113,8 @@ for subset in ['train', 'val', 'test']:
                 phonemes.append(p)
             phonemes.append('>')  # add space token after each word
         phonemes = phonemes[:-1]  # remove last space token
-        print(phonemes)
-        phonemes_idx = torch.tensor([cmu_phoneme2idx[cmu_symbols2phones[p]] for p in phonemes]).type(torch.float32)
+
+        phonemes_idx = torch.tensor([viseme2idx[CMU2VISEME[cmu_symbols2phones[p]]] for p in phonemes]).type(torch.float32)
         print(phonemes_idx)
 
         file_name = transcript.split('/')[-1][:-4]

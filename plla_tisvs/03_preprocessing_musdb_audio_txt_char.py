@@ -23,10 +23,12 @@ import yaml
 # https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
 yaml.warnings({'YAMLLoadWarning': False})
 
-path_to_musdb = '/Volumes/Evan_disk/Speech_data_set/musdb18/' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
-path_to_train_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/train_lyrics/'
-path_to_test_lyrics = '/Volumes/Evan_disk/Speech_data_set/musdb18/test_lyrics/'
-path_to_save_data = '/Volumes/Evan_disk/Speech_data_set/musdb_with_lyrics'
+with open('./dicts/data_set_location.json') as f:
+    dataset_path_dict = json.load(f)
+path_to_musdb = os.path.join(dataset_path_dict["dataset_root"], 'musdb18/')
+path_to_train_lyrics = os.path.join(dataset_path_dict["dataset_root"], 'musdb18/train_lyrics/')
+path_to_test_lyrics = os.path.join(dataset_path_dict["dataset_root"], 'musdb18/test_lyrics/')
+path_to_save_data = os.path.join(dataset_path_dict["dataset_root"], 'musdb18/musdb_with_lyrics/')
 
 # path_to_musdb = 'E:/Speech_data_set/musdb18' # this should lead to the directory with mmusdb18 in it, i.e. one level above it
 # path_to_train_lyrics = 'E:/Speech_data_set/musdb18/train_lyrics/'
