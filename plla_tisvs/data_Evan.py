@@ -169,7 +169,7 @@ def load_datasets(parser, args):
         parser.add_argument('--speech-examples', type=int, default=4320)  # number of speech examples to be added
 
         args = parser.parse_args()
-
+        print("the type of text_units is:", args.text_units)
         singing_train_data = MUSDBLyricsDataTrain(samplerate=args.samplerate,
                                                   text_units=args.text_units,
                                                   space_token_only=args.space_token_only,
@@ -278,10 +278,9 @@ class MUSDBLyricsDataTrain(torch.utils.data.Dataset):
         with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
         if samplerate == 16000:
-            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics')
+            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], 'musdb_with_lyrics/')
         elif samplerate == 44100:
-            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics441')
-
+            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], 'musdb_with_lyrics441/')
         self.random_track_mixing = random_track_mixing
         if self.random_track_mixing:
             pickle_in = open(os.path.join(self.data_set_root, 'train/train_accompaniments_12s.pickle'), 'rb')
@@ -464,9 +463,9 @@ class MUSDBLyricsDataVal(torch.utils.data.Dataset):
         # elif samplerate == 44100:
         #     self.data_set_root = '../Datasets/MUSDB_w_lyrics441'
         if samplerate == 16000:
-            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics')
+            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], 'musdb_with_lyrics/')
         elif samplerate == 44100:
-            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics441')
+            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], 'musdb_with_lyrics441/')
 
         if text_units == 'cmu_phonemes' or 'voice_activity':
             self.path_to_text = os.path.join(self.data_set_root, 'val/text_cmu_phonemes/')
@@ -589,9 +588,9 @@ class MUSDBLyricsDataTest(torch.utils.data.Dataset):
         with open('plla_tisvs/dicts/data_set_location.json') as f:
             self.addr_dict = json.load(f)
         if samplerate == 16000:
-            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics')
+            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], 'musdb_with_lyrics/')
         elif samplerate == 44100:
-            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], '/MUSDB_w_lyrics441')
+            self.data_set_root = os.path.join(self.addr_dict["dataset_root"], 'musdb_with_lyrics441/')
 
         if text_units == 'characters':
             self.path_to_text = os.path.join(self.data_set_root, 'test/text/')
