@@ -79,14 +79,14 @@ cmu_vocabulary = ['#', '$', '%', '>', '-', 'AA', 'AE', 'AH', 'AO', 'AW', 'AY', '
                   'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG', 'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH', 'UH',
                   'UW', 'V', 'W', 'Y', 'Z', 'ZH']
 
-visemes_vocabulary = ['#', '$', '%', '>', '-', 'M', 'BP', "Y", "J", "R", "FV", "LNTD", "M", "BP", "W", "Th", "GK",
-                     "ShChZh", "SZ", "A", "E", "I", "O", "U"]
-
+visemes_vocabulary = ['#', '$', '%', '>', '-', 'M', 'BP', "Y", "J", "R", "V", "F", "DT", "L", "N", "M", "BP", "W", "Th", "GK",
+                     "ShChZh", "Z", "S", "A", "E", "I", "O", "U"]
+print(visemes_vocabulary)
 CMU2VISEME = {"AA":"A", "AO":"A", "AY":"A", "AW":"A","AE":"E",
               "EY":"E","UH":"A", "UW":"U","IH": "I","IY": "I","EH": "E","HH": "E","UH": "U","AH": "E",
-              "ER": "E","OW":"O","OY":"O","R":"R","D":"LNTD","T": "LNTD","L":"LNTD","N":"LNTD","NG":"LNTD",
-              "F":"FV","V":"FV","B":"BP","M":"M","P":"BP","CH":"ShChZh","SH":"ShChZh","ZH":"ShChZh",
-              "S": "SZ", "Z": "SZ","DH":"Th", "TH":"Th","G":"GK", "K":"GK","Y":"Y","JH":"J","W":"W", '#':'#',
+              "ER": "E","OW":"O","OY":"O","R":"R","D":"DT","T": "DT","L":"L","N":"N","NG":"N",
+              "F":"F","V":"V","B":"BP","M":"M","P":"BP","CH":"ShChZh","SH":"ShChZh","ZH":"ShChZh",
+              "S": "S", "Z": "Z","DH":"Th", "TH":"Th","G":"GK", "K":"GK","Y":"Y","JH":"J","W":"W", '#':'#',
               '$':'$', '%':'%', '>':'>', '-':'-'}
 
 viseme2idx = {}

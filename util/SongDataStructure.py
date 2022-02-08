@@ -16,7 +16,7 @@ from plla_tisvs.estimate_alignment import optimal_alignment_path, compute_phonem
 import json
 import re
 from util.pitch_interval_estimation import *
-
+import crepe
 
 NOTES_NAME = ["A", "A#", "B", "C", "C#", "D",
               "D#", "E", "F", "F#", "G", "G#"]
@@ -43,19 +43,24 @@ VOCAL_RANGES_VAL = [[87.30705785825097, 329.62755691287],
 VOCAL_RANGES_NAME = ['BASS', 'BARITONE', 'TENOR', 'ALTO', 'MEZZO_SOPRANO', 'SOPRANO']
 
 class Minimal_song_data_structure():
-    def __init__(self, audio_path_file, transcript_path, txt_grid_path = "", pitch_ceiling = 1400):
+    def __init__(self, audio_path_file, transcript_path, txt_grid_path = "", pitch_ceiling = 1400, alignment_type = "cmu_phonemes"):
         # the audio file should be 44.1kHz for accurate pitch prediction result.
         # the audio file could be a mp3 file
         self.transcript_path = transcript_path
         self.audio_path_file = audio_path_file
+        self.alignment_type = alignment_type
         # set some hyperparameters
         self.pitch_ceiling = pitch_ceiling
         self.dt = 0.01
         self.silence_threshold = 0.007
         # obtain sound related data using Praat
         self.snd = parselmouth.Sound(audio_path_file)
-        self.sound_arr = librosa.load(audio_path_file, sr = 44100)[0]
+        self.sound_arr = self.snd.as_array()[0]
+        # self.sound_arr = librosa.load(audio_path_file, sr = 44100)[0]
         self.sound_arr_interp = interp1d(self.snd.xs(), self.sound_arr)
+
+        # librosa.load(audio_path_file, sr=44100)[0]
+
         self.pitch = self.snd.to_pitch(time_step = self.dt, pitch_ceiling = self.pitch_ceiling)
         self.pitch_arr = self.pitch.selected_array["frequency"]
         self.pitch_arr[self.pitch_arr == 0] = np.nan
@@ -99,7 +104,10 @@ class Minimal_song_data_structure():
         if txt_grid_path != "":
             self.phoneme_list, self.phoneme_intervals, self.word_list, self.word_intervals = self.load_phoneme_textgrid(txt_grid_path)
     def get_f_interval(self, interval):
-        ts = np.arange(interval[0], min(interval[1], self.pitch.xs()[-1]), self.dt)
+        try:
+            ts = np.arange(max(interval[0], self.pitch.xs()[0]), min(interval[1], self.pitch.xs()[-1]), self.dt)
+        except:
+            ts = np.arange(max(interval[0], self.pitch_xs[0]), min(interval[1], self.pitch_xs[-1]), self.dt)
         return ts, self.pitch_interp(ts)
     def get_I_interval(self, interval):
         ts = np.arange(interval[0], min(interval[1], self.intensity.xs()[-1]), self.dt)
@@ -131,25 +139,38 @@ class Minimal_song_data_structure():
             interval = sub_intervals[i]
             phone = self.phoneme_list[i]
             if phone in VOWELS:
-                xs_phone = xs[interval[0]:interval[1]]
-                temp_vib_interval = self.compute_vibrato_intervals(f(xs_phone), xs_phone, self.dt)
                 vib_interval = []
-                # merge these intervals in necessary
-                j = 0
-                while j <= len(temp_vib_interval) - 1:
-                    if j == len(temp_vib_interval) - 1:
-                        vib_interval.append(temp_vib_interval[j])
-                        j = j + 1
-                    elif abs(temp_vib_interval[j][1] - temp_vib_interval[j + 1][0]) <= self.dt * 2.5:
-                        vib_interval.append([temp_vib_interval[j][0], temp_vib_interval[j + 1][0]])
-                        j = j + 2
-                    else:
-                        vib_interval.append(temp_vib_interval[j])
-                        j = j + 1
-                if j == 0:
-                    vib_interval = temp_vib_interval
+
+                if xs[interval[1]] - xs[interval[0]] > 0.3:
+                    xs_phone = xs[interval[0]:interval[1]]
+                    temp_vib_interval = self.compute_vibrato_intervals(f(xs_phone), xs_phone, self.dt)
+
+                    # merge these intervals in necessary
+                    j = 0
+                    while j <= len(temp_vib_interval) - 1:
+                        if j == len(temp_vib_interval) - 1:
+                            vib_interval.append(temp_vib_interval[j])
+                            j = j + 1
+                        elif abs(temp_vib_interval[j][1] - temp_vib_interval[j + 1][0]) <= self.dt * 2.5:
+                            vib_interval.append([temp_vib_interval[j][0], temp_vib_interval[j + 1][0]])
+                            j = j + 2
+                        else:
+                            vib_interval.append(temp_vib_interval[j])
+                            j = j + 1
+                    if j == 0:
+                        vib_interval = temp_vib_interval
                 self.vibrato_intervals.append(vib_interval)
         return self.vibrato_intervals
+    def compute_advanced_pitch(self):
+        time, frequency, confidence, activation = crepe.predict(self.sound_arr, 44100, viterbi=True)
+        self.pitch = None
+        self.pitch_xs = time
+        self.pitch_arr = frequency
+        self.pitch_arr[self.pitch_arr == 0] = np.nan
+        mask = np.isnan(self.pitch_arr)
+        self.pitch_arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), self.pitch_arr[~mask])
+        # use interpolation to deal with missing value in the pitch prediction
+        self.pitch_interp = interp1d(self.pitch_xs, self.pitch_arr)
     def compute_vibrato_intervals_old(self, frequency, frequency_xs, dt):
         # this function computes vibrato by analyzing the zero-crossing of the input frequency array
         # if it can identify 3 zero crossing that are equally spaced apart, then it recognize those
@@ -196,12 +217,12 @@ class Minimal_song_data_structure():
         # this function computes vibrato by analyzing the zero-crossing of the input frequency array
         # if it can identify 3 zero crossing that are equally spaced apart, then it recognize those
         # as a vibrato.
-        min_zero_crossing_distance = 1.0 / 16  # max vibrato frequency = 7 Hz = 14 zero crossings per second
-        self.tolerance = dt * 8  # using the uncertainty of the instrument (pitch measuring device) to bound tolerance
-
+        min_zero_crossing_distance = 1.0 / 14  # max vibrato frequency = 7 Hz = 14 zero crossings per second
+        tolerance = dt * 4  # using the uncertainty of the instrument (pitch measuring device) to bound tolerance
+        min_height = 15
         # compute time derivative
         d_frequency_dt = correlate(frequency, np.array([-1.0, 0, 1.0]), mode="same") / dt / 2
-
+        f_interp = interp1d(frequency_xs, frequency)
         # obtain zero crossings
         zero_crossing = []
         for i in range(0, d_frequency_dt.shape[0] - 1):
@@ -211,13 +232,16 @@ class Minimal_song_data_structure():
         # choose sets of zero crossing and identify vibratos within those
         distance = 0
         in_vibrato = 0
+        amplitude_avg = 0
         starting_time = -1
         starting_index = -1
         vibrato_intervals = []
         for i in range(0, len(zero_crossing) - 1):
             current_distance = frequency_xs[zero_crossing[i + 1]] - frequency_xs[zero_crossing[i]]
+            current_height = abs(
+                f_interp(frequency_xs[zero_crossing[i + 1]]) - f_interp(frequency_xs[zero_crossing[i]]))
             if abs(
-                    current_distance - distance) <= self.tolerance and current_distance - min_zero_crossing_distance >= -self.dt:
+                    current_distance - distance) <= tolerance and current_distance - min_zero_crossing_distance >= -dt:
                 if i == len(zero_crossing) - 2:
                     if in_vibrato > 0:
                         vib_interval_start = frequency_xs[starting_time]
@@ -227,15 +251,14 @@ class Minimal_song_data_structure():
                         # now I count backwards, if the distance includes the previous zero crossing, then
                         # I count that zero_crossing as part of the vibrato
                         for k in range(starting_index - 1, -1, -1):
-                            print(frequency_xs[zero_crossing[k]])
-                            print(freq_time - counter * distance - self.dt)
-                            if frequency_xs[zero_crossing[k]] >= freq_time - counter * distance - self.dt:
+                            if (frequency_xs[zero_crossing[k]] >= freq_time - counter * distance - dt and
+                                    frequency_xs[zero_crossing[k]] <= freq_time - (counter + 1) * distance - dt):
                                 vib_interval_start = frequency_xs[zero_crossing[k]]
                                 counter = counter + 1
                                 in_vibrato = in_vibrato + 1
                             else:
                                 break
-                        if in_vibrato > 2:
+                        if in_vibrato > 2 and amplitude_avg >= min_height:
                             vibrato_intervals.append(
                                 [vib_interval_start, frequency_xs[zero_crossing[min(i + 1, len(zero_crossing) - 1)]]])
                         distance = current_distance
@@ -244,9 +267,12 @@ class Minimal_song_data_structure():
                     starting_time = zero_crossing[i - 1]
                     starting_index = i - 1
                     distance = (distance + current_distance) / 2  # calculate new average
+                    amplitude_avg = (current_height + amplitude_avg) / 2
                     in_vibrato = 1
                 elif in_vibrato > 0:
                     distance = (distance * in_vibrato + current_distance) / (in_vibrato + 1)  # calculate new average
+                    amplitude_avg = (amplitude_avg * in_vibrato + current_height) / (
+                                in_vibrato + 1)  # calculate new average
                     in_vibrato = in_vibrato + 1
             else:
                 if in_vibrato > 0:
@@ -258,25 +284,31 @@ class Minimal_song_data_structure():
                     # I count that zero_crossing as part of the vibrato
                     for k in range(starting_index - 1, -1, -1):
 
-                        if frequency_xs[zero_crossing[k]] >= freq_time - counter * distance - self.dt:
+                        if (frequency_xs[zero_crossing[k]] >= freq_time - counter * distance - dt and
+                                frequency_xs[zero_crossing[k]] <= freq_time - (counter + 1) * distance - dt):
                             vib_interval_start = frequency_xs[zero_crossing[k]]
                             counter = counter + 1
                             in_vibrato = in_vibrato + 1
                         else:
                             break
-                    if in_vibrato > 2:
+                    if in_vibrato > 2 and amplitude_avg >= min_height:
                         vibrato_intervals.append([vib_interval_start, frequency_xs[zero_crossing[i]]])
                     distance = current_distance
+                    amplitude_avg = current_height
                     in_vibrato = 0
                 else:
                     distance = current_distance
+                    amplitude_avg = current_height
         return vibrato_intervals
     def compute_self_pitch_intervals(self):
         sigma = 10
         window_short = 1/np.sqrt(np.pi * 2) / sigma * gaussian(sigma * 2, sigma)
         window = 1/np.sqrt(np.pi * 2) / sigma * gaussian(sigma * 4, sigma)
         if len(self.phoneme_list) <= 0:
-            self.compute_self_phoneme_alignment()
+            if self.alignment_type == "cmu_phonemes":
+                self.compute_self_phoneme_alignment()
+            elif self.alignment_type == "visemes":
+                self.compute_self_viseme_alignment()
         freq = self.pitch.selected_array["frequency"]
         xs = self.xs
         sub_intervals = self.__get_subarrays_indexes_from_time_interval(self.phoneme_intervals, xs)
@@ -508,6 +540,109 @@ class Minimal_song_data_structure():
         self.phoneme_intervals = [[phoneme_onsets[0], phoneme_onsets[1]]] + self.phoneme_intervals
         print(self.phoneme_list)
         print(self.phoneme_intervals)
+    def compute_self_viseme_alignment(self):
+
+        dict_path = "./plla_tisvs/dicts"
+        model_path = './plla_tisvs/trained_models/{}'.format("viseme")
+        phoneme_dict_path = "cmu_word2cmu_phoneme_extra.pickle"
+
+        # output_path = "E:/ten_videos/Child_in_time/Child_in_time_2"
+
+        # initilize these variables
+        self.phoneme_list = []
+        self.phoneme_list_full = []
+        self.phoneme_intervals = []
+        self.word_list = []
+        self.word_intervals = []
+
+        # parse data
+        try:
+            data_parser = Custom_data_set(dict_path, phoneme_dict_path)
+        except:
+            dict_path = "." + dict_path
+            data_parser = Custom_data_set(dict_path, phoneme_dict_path)
+        audio, phoneme_idx, phoneme_list_full, self.word_list = data_parser.parse(self.audio_path_file, self.transcript_path, vocab="visemes")
+        self.word_list = [">"] + self.word_list
+        # load model
+        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = 'cpu'
+        target = 'vocals'
+
+        # load model
+        try:
+            model_to_test = testx.load_model(target, model_path, device)
+        except:
+            model_path = "." + model_path
+            model_to_test = testx.load_model(target, model_path, device)
+        model_to_test.return_alphas = True
+        model_to_test.eval()
+
+        # load model config
+        with open(os.path.join(model_path, target + '.json'), 'r') as stream:
+            config = json.load(stream)
+            samplerate = config['args']['samplerate']
+            text_units = config['args']['text_units']
+            nfft = config['args']['nfft']
+            nhop = config['args']['nhop']
+
+        # modify audio so that if there's a lot of zeros paddings on eitherside of the data, they will be removed
+        from matplotlib import pyplot as plt
+        start = 0
+        end = -1
+        for i in range(0, audio.shape[2]):
+            if audio[0, 0, i].item() >= self.silence_threshold:
+                start = max(0, i - 100)
+                break
+        for i in range(0, audio.shape[2]):
+            if audio[0, 0, audio.shape[2]-1-i].item() > self.silence_threshold:
+                end = min(audio.shape[2]-1-i + 100, audio.shape[2]-1)
+                break
+        audio = audio[:, :, start:end+1]
+        start_off_set = 1/16000.0 * start
+
+        # compute the alignment
+        with torch.no_grad():
+            vocals_estimate, alphas, scores = model_to_test((audio, phoneme_idx))
+        optimal_path_scores = optimal_alignment_path(scores, mode='max_numpy', init=200)
+        phoneme_onsets = compute_phoneme_onsets(optimal_path_scores, hop_length=nhop, sampling_rate=samplerate)
+        phoneme_onsets = np.array(phoneme_onsets) + start_off_set
+        # get the phoneme from the indexes
+        temp_phoneme_intervals = []
+        for i in range(1, phoneme_onsets.shape[0]-1):
+            temp_phoneme_intervals.append([phoneme_onsets[i], phoneme_onsets[i+1]])
+        temp_phoneme_list = data_parser.get_visemes(phoneme_idx[0])[1:-1]
+        temp_phoneme_list_full = phoneme_list_full[1:]
+
+        # remove the spaces within words, but keep those between words
+        i = 0 # pointer for the phoneme_list, increase by 1 each iteration
+        j = 0 # pointer for the phoneme_list_full, increase by 1 each iteration, but increase by 2 at EOW
+        while j < len(temp_phoneme_list_full)-1:
+            # here we are assuming that temp_phoneme_list_full starts with no space
+            if temp_phoneme_list_full[j+1] == ">":
+                # if the next character is a space, then the intervals are merged
+                self.phoneme_list.append(temp_phoneme_list[i])
+                self.phoneme_intervals.append([temp_phoneme_intervals[i][0], temp_phoneme_intervals[i+1][1]])
+                j = j + 2
+                i = i + 2
+            elif temp_phoneme_list_full[j+1] == "EOW":
+                # if the next character is the end of word, then we just keep the current phoneme and interval
+                self.phoneme_list.append(temp_phoneme_list[i])
+                self.phoneme_intervals.append(temp_phoneme_intervals[i])
+                j = j + 2
+                i = i + 1
+            elif temp_phoneme_list_full[j] == ">":
+                # if we are at a space, that means we are that space between words, this will be kept.
+                self.phoneme_list.append(temp_phoneme_list[i])
+                self.phoneme_intervals.append(temp_phoneme_intervals[i])
+                j = j + 1
+                i = i + 1
+            else:
+                raise Exception("something is wrong with phoneme alignment")
+        self.word_intervals = self.compute_word_alignment(phoneme_onsets, phoneme_list_full)
+        self.phoneme_list = [">"] + self.phoneme_list
+        self.phoneme_intervals = [[phoneme_onsets[0], phoneme_onsets[1]]] + self.phoneme_intervals
+        print(self.phoneme_list)
+        print(self.phoneme_intervals)
     def load_phoneme_textgrid(self, path):
         grid = textgrids.TextGrid(path)
         phoneme_list = []
@@ -639,3 +774,69 @@ class Minimal_song_data_structure():
                 new_traits.append(trait)
                 new_intervals.append(interval)
         return new_traits, new_intervals
+
+
+class CMU_phonemes_dicts():
+    def __init__(self):
+        self.vocabs = set(['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'B', 'CH', 'D', 'DH', 'EH', 'ER', 'EY', 'F', 'G',
+                  'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG', 'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH', 'UH',
+                  'UW', 'V', 'W', 'Y', 'Z', 'ZH'])
+        self.vowels = set(['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY',
+                  'IH', 'IY', 'OW', 'OY', 'UH', 'UW', ])
+        self.voiced = set(['M', 'N']).union(self.vowels)
+        self.consonants = set(['B', 'CH', 'D', 'DH', 'F', 'G', 'HH', 'JH', 'K', 'L', 'M', 'N', 'NG',
+                              'P', 'R', 'S', 'SH', 'T', 'TH', 'V', 'W', 'Y', 'Z', 'ZH'])
+        self.consonants_no_jaw = self.consonants
+        self.lip_closer = set(["B", "F", "M", "P", "S", "V"])
+        self.lip_rounder = set(["B", "F", "M", "P", "V"])
+        self.nasal_obtruents = set(['L', 'N', 'NG', 'T', 'D', 'G', 'K', 'F', 'V', 'M', 'B', 'P'])
+        self.fricative = set(["S", "Z", "ZH", "SH", "CH", "F", "V", 'TH'])
+        self.plosive = set(["P", "B", "D", "T", "K", "G"])
+        self.lip_heavy = set(["W", "OW", "UW", "S", "Z", "Y", "JH", "OY"])
+        self.sibilant = set(["S", "Z", "SH", "CH", "ZH"])
+class JALI_visemes_dicts():
+     def __init__(self):
+        self.vowels = set(['Ih_pointer', 'Ee_pointer', 'Eh_pointer', 'Aa_pointer', 'U_pointer', 'Uh_pointer'
+                           , 'Oo_pointer', 'Oh_pointer', 'Schwa_pointer', 'Eu_pointer', "Ah_pointer"])
+        self.voiced = set(['Ih_pointer', 'Ee_pointer', 'Eh_pointer', 'Aa_pointer', 'U_pointer', 'Uh_pointer'
+                           , 'Oo_pointer', 'Oh_pointer', 'Schwa_pointer', 'Eu_pointer', "Ah_pointer", "LNTD_pointer", "LNTDa_pointer"])
+        self.consonants_no_jaw = set(["Ya_pointer", "Ja_pointer", "Ra_pointer", "FVa_pointer", "LNTDa_pointer", "Ma_pointer", "BPa_pointer", "Wa_pointer", "Tha_pointer", "GKa_pointer"])
+        self.consonants = set(["M_pointer", "BP_pointer", "JY_pointer", "Th_pointer", "ShChZh_pointer", "SZ_pointer", "GK_pointer", "LNTD_pointer", "R_pointer", "W_pointer", "FV_pointer"])
+        self.lip_closer = set(["M_pointer", "BP_pointer", "FV_pointer", "SZ_pointer"])
+        self.lip_rounder = set(["M_pointer", "BP_pointer", "FV_pointer"])
+        self.vocabs = self.consonants.union(self.vowels).union(self.consonants_no_jaw)
+        self.sibilant = set(["SZ_pointer", "ShChZh_pointer"])
+        self.nasal_obtruents = set(["LNTD_pointer", "GK_pointer", "FV_pointer", "M_pointer", "BP_pointer"])
+        self.fricative = set(["FV_pointer", "SZ_pointer", "ShChZh_pointer", "Th_pointer"])
+        self.plosive = set(["BP_pointer", "LNTDa_pointer", "GK_pointer"])
+        self.lip_heavy = set(["Oh_pointer", "W_pointer", "Wa_pointer", "U_pointer", "SZ_pointer", "JY_pointer",
+                             "Ya_pointer", "Ja_pointer"])
+        self.lip_rounder_to_no_jaw_dict = {"M_pointer":"Ma_pointer", "BP_pointer":"BPa_pointer", "FV_pointer":"FVa_pointer"}
+class Viseme_curve():
+    def __init__(self, v_list=None, v_pts=None):
+        if v_list is None:
+            self.viseme_list = []       # This should be a list of strings of CMU phonemes ["str"]
+            self.viseme_ctrl_pts = []   # This should be a [[time:float, value:float, type:str]]
+            self.pure_phoneme = []      # This should be a list of strings of CMU phonemes ["str"]
+        else:
+            self.viseme_list = [v_list]  # This should be a list of strings of CMU phonemes ["str"]
+            self.viseme_ctrl_pts = [v_pts]  # This should be a [[time:float, value:float, type:str]]
+            self.pure_phoneme = []  # This should be a list of strings of CMU phonemes ["str"]
+
+    def new_pass(self):
+        self.viseme_list.append([])
+        self.viseme_ctrl_pts.append([])
+        self.pure_phoneme.append([])
+    def add(self, viseme, ctpts, phoneme):
+        self.viseme_list[-1].append(viseme)
+        self.viseme_ctrl_pts[-1].append(ctpts)
+        self.pure_phoneme[-1].append(phoneme)
+    def get(self, i, generation = -1):
+        if i > len(self.viseme_list):
+            return self.viseme_list[generation][-1], self.viseme_ctrl_pts[generation][-1], self.pure_phoneme[generation][-1]
+        else:
+            return self.viseme_list[generation][i], self.viseme_ctrl_pts[generation][i], self.pure_phoneme[generation][i]
+
+
+
+

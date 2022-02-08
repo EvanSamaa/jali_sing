@@ -19,17 +19,35 @@ class Custom_data_set():
                       'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG', 'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH',
                       'UH',
                       'UW', 'V', 'W', 'Y', 'Z', 'ZH']
+        self.CMU2VISEME = {"AA": "A", "AO": "A", "AY": "A", "AW": "A", "AE": "E",
+                      "EY": "E", "UH": "A", "UW": "U", "IH": "I", "IY": "I", "EH": "E", "HH": "E", "UH": "U", "AH": "E",
+                      "ER": "E", "OW": "O", "OY": "O", "R": "R", "D": "LNTD", "T": "LNTD", "L": "LNTD", "N": "LNTD",
+                      "NG": "LNTD",
+                      "F": "FV", "V": "FV", "B": "BP", "M": "M", "P": "BP", "CH": "ShChZh", "SH": "ShChZh",
+                      "ZH": "ShChZh",
+                      "S": "SZ", "Z": "SZ", "DH": "Th", "TH": "Th", "G": "GK", "K": "GK", "Y": "Y", "JH": "J", "W": "W",
+                      '#': '#',
+                      '$': '$', '%': '%', '>': '>', '-': '-'}
+        visemes_vocabulary = ['#', '$', '%', '>', '-', 'M', 'BP', "Y", "J", "R", "FV", "LNTD", "M", "BP", "W", "Th",
+                              "GK",
+                              "ShChZh", "SZ", "A", "E", "I", "O", "U"]
         self.cmu_phoneme2idx = {}
         self.cmu_idx2phoneme = {}
+        self.viseme2idx = {}
+        self.idx2viseme = {}
         for idx, phoneme in enumerate(cmu_vocabulary):
             self.cmu_phoneme2idx[phoneme] = idx
             self.cmu_idx2phoneme[idx] = phoneme
+
+        for idx, viseme in enumerate(visemes_vocabulary):
+            self.viseme2idx[viseme] = idx
+            self.idx2viseme[idx] = viseme
         with open(os.path.join(dict_path, phoneme_dict_path), "rb") as file:
             self.word2phoneme_dict = pickle.load(file)
         with open(os.path.join(dict_path, "cmu_symbols2phones.pickle"), "rb") as file:
             self.symbol2phoneme_dict = pickle.load(file)
 
-    def parse(self, audio_path, transcirpt_path):
+    def parse(self, audio_path, transcirpt_path, vocab="cmu_phonemes"):
         phoneme_list = []
 
         # load the transcript file
@@ -57,7 +75,10 @@ class Custom_data_set():
                 phoneme_list.append(">")
             phoneme_list_full.append("EOW")
         phoneme_list = phoneme_list[:-1]
-        phoneme_idx = np.array([self.cmu_phoneme2idx[p] for p in phoneme_list])
+        if vocab == "cmu_phonemes":
+            phoneme_idx = np.array([self.cmu_phoneme2idx[p] for p in phoneme_list])
+        else:
+            phoneme_idx = np.array([self.viseme2idx[self.CMU2VISEME[p]] for p in phoneme_list])
         phoneme_idx = np.pad(phoneme_idx, (1, 1), mode='constant', constant_values=1)
         phoneme_idx_torch = torch.from_numpy(phoneme_idx)
 
@@ -74,7 +95,10 @@ class Custom_data_set():
         for k in range(0, data.shape[0]):
             sound.append(librosa.resample(data[k, :], samplerate, 16000))
         sound = np.array(sound)
-        sound = (sound - sound.mean() )/sound.std() * 0.06
+        if vocab == "visemes":
+            sound = (sound - sound.mean()) / sound.std()
+        else:
+            sound = (sound - sound.mean()) / sound.std() * 0.06
 
         sound_torch = torch.from_numpy(sound.copy()).type(torch.float32)
         sound_torch_out = sound_torch.unsqueeze(dim=0)
@@ -86,6 +110,15 @@ class Custom_data_set():
         for i in range(0, idx_list.size()[0]):
             out.append(self.cmu_idx2phoneme[int(idx_list[i].item())])
         return out
+
+    def get_visemes(self, idx_list):
+        # input should be an 1D array of indexes, it will be turned into a list of phonemes
+        out = []
+        for i in range(0, idx_list.size()[0]):
+            out.append(self.idx2viseme[int(idx_list[i].item())])
+        return out
+
+
 if __name__ == "__main__":
 
 
