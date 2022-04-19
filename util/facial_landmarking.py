@@ -58,9 +58,10 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
     landmark_output = []
     raw_landmark_output = []
     with mp_face_mesh.FaceMesh(
-            static_image_mode=False,
+            static_image_mode=True,
             max_num_faces=1,
-            min_detection_confidence=0.5) as face_mesh:
+            min_detection_confidence=0.5,
+            refine_landmarks=True) as face_mesh:
         pbar = tqdm(total=cap.get(cv2.CAP_PROP_FRAME_COUNT))
         # for idx, file in enumerate(IMAGE_FILES):
         while cap.isOpened():
@@ -71,13 +72,13 @@ def extract_landmarks_media_pipe(input_video, input_dir, show_annotated_video = 
             results = face_mesh.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             # Print and draw face mesh landmarks on the image.
             if not results.multi_face_landmarks:
-                landmark_output.append(np.zeros((468, 2)))
-                raw_landmark_output.append(np.zeros((468, 3)))
+                landmark_output.append(np.zeros((478, 2)))
+                raw_landmark_output.append(np.zeros((478, 3)))
                 continue
             # https://github.com/ManuelTS/augmentedFaceMeshIndices/blob/master/Nose.jpg points of the face model
             # print(results.multi_face_landmarks)
             face_landmarks = results.multi_face_landmarks[0].landmark
-            land_mark_matrix_pts = np.zeros((468, 3))
+            land_mark_matrix_pts = np.zeros((478, 3))
             for i in range(0, len(face_landmarks)):
                 land_mark_matrix_pts[i, 0] = face_landmarks[i].x
                 land_mark_matrix_pts[i, 1] = face_landmarks[i].y
@@ -293,7 +294,7 @@ def extract_landmark_media_pipe_single_image(file_path):
 if __name__ == "__main__":
 
     extract_landmarks_media_pipe("rolling_in_the_deep_2.mp4",
-                                 "E:\\MASC\\ten_videos\\rolling_in_the_deep", save_annotated_video=False)
+                                 "F:\\MASC\\Jali_sing\\10 singing videos\\rolling_in_the_deep", save_annotated_video=True)
     A[2]
     show_annotated_video = False
     show_normalized_pts = False

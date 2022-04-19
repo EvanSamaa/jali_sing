@@ -52,7 +52,6 @@ def get_audio_from_video(file_name, video_folder_path, target_fps = 30, remove=F
     meta_data["audio_path"] = os.path.join(video_folder, "audio.mp3")
     with open(os.path.join(video_folder, "other_info.json"), 'w') as outfile:
         json.dump(meta_data, outfile)
-
 def split_video_to_images(file_name, video_folder_path, target_fps = 30, remove=False):
     # filename can just be the name of the file,
     # the video must be in the video folder_path
