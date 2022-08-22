@@ -48,7 +48,6 @@ def efficient_piece_wise_linear_intervals(x, y):
     # compute E_line
     E_line = (y.max() - y.min()) / 2
 
-
     # divide the input to shorter subarrays
     sub_x_lists = []
     sub_y_lists = []

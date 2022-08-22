@@ -120,7 +120,7 @@ class Minimal_song_data_structure():
     def get_F1_interval(self, interval):
         ts = np.arange(interval[0], min(interval[1], self.formant.xs()[-1]), self.dt)
         return ts, self.F1_interp(ts)
-    def compute_self_vibrato_intervals(self):
+    def compute_self_vibrato_intervals_old(self):
         if len(self.vibrato_intervals) == 0:
             strength = self.pitch.selected_array["strength"]
             frequency = self.pitch.selected_array["frequency"]
@@ -166,6 +166,47 @@ class Minimal_song_data_structure():
                         vib_interval = temp_vib_interval
                 self.vibrato_intervals.append(vib_interval)
         return self.vibrato_intervals
+    def compute_self_vibrato_intervals(self):
+        # obtain variables
+        xs = self.xs
+        freq = self.pitch.selected_array["frequency"]
+        # smooth frequency so it does not have sudden jumps during silence
+        freq[freq == 0] = np.nan
+        # use interpolation to deal with missing value in the pitch prediction
+        f = interp1d(xs, freq)
+
+        sub_intervals = self.__get_subarrays_indexes_from_time_interval(self.phoneme_intervals, xs)
+        self.vibrato_intervals = []
+        for i in range(0, len(sub_intervals)):
+            interval = sub_intervals[i]
+            phone = self.phoneme_list[i]
+            if phone in VOWELS:
+                vib_interval = []
+
+                if xs[interval[1]] - xs[interval[0]] > 0.3:
+                    xs_phone = xs[interval[0]:interval[1]]
+                    temp_vib_interval = self.compute_vibrato_intervals(f(xs_phone), xs_phone, self.dt)
+                    # temp_vib_interval_I = self.compute_vibrato_intervals_I(self.intensity_interp(xs_phone), xs_phone, self.dt)
+                    temp_vib_interval_I = temp_vib_interval
+
+                    if len(temp_vib_interval) == 0:
+                        temp_vib_interval = temp_vib_interval_I
+                    # merge these intervals in necessary
+                    j = 0
+                    while j <= len(temp_vib_interval) - 1:
+                        if j == len(temp_vib_interval) - 1:
+                            vib_interval.append(temp_vib_interval[j])
+                            j = j + 1
+                        elif abs(temp_vib_interval[j][1] - temp_vib_interval[j + 1][0]) <= self.dt * 2.5:
+                            vib_interval.append([temp_vib_interval[j][0], temp_vib_interval[j + 1][0]])
+                            j = j + 2
+                        else:
+                            vib_interval.append(temp_vib_interval[j])
+                            j = j + 1
+                    if j == 0:
+                        vib_interval = temp_vib_interval
+                self.vibrato_intervals.append(vib_interval)
+        return self.vibrato_intervals
     def compute_advanced_pitch(self):
         time, frequency, confidence, activation = crepe.predict(self.sound_arr, 44100, viterbi=True)
         self.pitch = None
@@ -176,7 +217,7 @@ class Minimal_song_data_structure():
         self.pitch_arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), self.pitch_arr[~mask])
         # use interpolation to deal with missing value in the pitch prediction
         self.pitch_interp = interp1d(self.pitch_xs, self.pitch_arr)
-    def compute_vibrato_intervals_old(self, frequency, frequency_xs, dt):
+    def compute_vibrato_intervals_old_1(self, frequency, frequency_xs, dt):
         # this function computes vibrato by analyzing the zero-crossing of the input frequency array
         # if it can identify 3 zero crossing that are equally spaced apart, then it recognize those
         # as a vibrato.
@@ -225,6 +266,93 @@ class Minimal_song_data_structure():
         min_zero_crossing_distance = 1.0 / 14  # max vibrato frequency = 7 Hz = 14 zero crossings per second
         tolerance = dt * 4  # using the uncertainty of the instrument (pitch measuring device) to bound tolerance
         min_height = 15
+        # compute time derivative
+        d_frequency_dt = correlate(frequency, np.array([-1.0, 0, 1.0]), mode="same") / dt / 2
+        f_interp = interp1d(frequency_xs, frequency)
+        # obtain zero crossings
+        zero_crossing = []
+        for i in range(0, d_frequency_dt.shape[0] - 1):
+            if (d_frequency_dt[i] < 0 and d_frequency_dt[i + 1] >= 0) or (
+                    d_frequency_dt[i] > 0 and d_frequency_dt[i + 1] <= 0):
+                zero_crossing.append(i + 1)
+        # choose sets of zero crossing and identify vibratos within those
+        distance = 0
+        in_vibrato = 0
+        amplitude_avg = 0
+        starting_time = -1
+        starting_index = -1
+        vibrato_intervals = []
+        for i in range(0, len(zero_crossing) - 1):
+            current_distance = frequency_xs[zero_crossing[i + 1]] - frequency_xs[zero_crossing[i]]
+            current_height = abs(
+                f_interp(frequency_xs[zero_crossing[i + 1]]) - f_interp(frequency_xs[zero_crossing[i]]))
+            if abs(
+                    current_distance - distance) <= tolerance and current_distance - min_zero_crossing_distance >= -dt:
+                if i == len(zero_crossing) - 2:
+                    if in_vibrato > 0:
+                        vib_interval_start = frequency_xs[starting_time]
+                        vib_interval_end = frequency_xs[zero_crossing[i]]
+                        counter = 1
+                        freq_time = frequency_xs[starting_time]
+                        # now I count backwards, if the distance includes the previous zero crossing, then
+                        # I count that zero_crossing as part of the vibrato
+                        for k in range(starting_index - 1, -1, -1):
+                            if (frequency_xs[zero_crossing[k]] >= freq_time - counter * distance - dt and
+                                    frequency_xs[zero_crossing[k]] <= freq_time - (counter + 1) * distance - dt):
+                                vib_interval_start = frequency_xs[zero_crossing[k]]
+                                counter = counter + 1
+                                in_vibrato = in_vibrato + 1
+                            else:
+                                break
+                        if in_vibrato > 2 and amplitude_avg >= min_height:
+                            vibrato_intervals.append(
+                                [vib_interval_start, frequency_xs[zero_crossing[min(i + 1, len(zero_crossing) - 1)]]])
+                        distance = current_distance
+                        in_vibrato = 0
+                if in_vibrato == 0:
+                    starting_time = zero_crossing[i - 1]
+                    starting_index = i - 1
+                    distance = (distance + current_distance) / 2  # calculate new average
+                    amplitude_avg = (current_height + amplitude_avg) / 2
+                    in_vibrato = 1
+                elif in_vibrato > 0:
+                    distance = (distance * in_vibrato + current_distance) / (in_vibrato + 1)  # calculate new average
+                    amplitude_avg = (amplitude_avg * in_vibrato + current_height) / (
+                                in_vibrato + 1)  # calculate new average
+                    in_vibrato = in_vibrato + 1
+            else:
+                if in_vibrato > 0:
+                    vib_interval_start = frequency_xs[starting_time]
+                    vib_interval_end = frequency_xs[zero_crossing[i]]
+                    counter = 1
+                    freq_time = frequency_xs[starting_time]
+                    # now I count backwards, if the distance includes the previous zero crossing, then
+                    # I count that zero_crossing as part of the vibrato
+                    for k in range(starting_index - 1, -1, -1):
+
+                        if (frequency_xs[zero_crossing[k]] >= freq_time - counter * distance - dt and
+                                frequency_xs[zero_crossing[k]] <= freq_time - (counter + 1) * distance - dt):
+                            vib_interval_start = frequency_xs[zero_crossing[k]]
+                            counter = counter + 1
+                            in_vibrato = in_vibrato + 1
+                        else:
+                            break
+                    if in_vibrato > 2 and amplitude_avg >= min_height:
+                        vibrato_intervals.append([vib_interval_start, frequency_xs[zero_crossing[i]]])
+                    distance = current_distance
+                    amplitude_avg = current_height
+                    in_vibrato = 0
+                else:
+                    distance = current_distance
+                    amplitude_avg = current_height
+        return vibrato_intervals
+    def compute_vibrato_intervals_I(self, frequency, frequency_xs, dt):
+        # this function computes vibrato by analyzing the zero-crossing of the input frequency array
+        # if it can identify 3 zero crossing that are equally spaced apart, then it recognize those
+        # as a vibrato.
+        min_zero_crossing_distance = 1.0 / 16  # max vibrato frequency = 7 Hz = 14 zero crossings per second
+        tolerance = dt * 4  # using the uncertainty of the instrument (pitch measuring device) to bound tolerance
+        min_height = 0
         # compute time derivative
         d_frequency_dt = correlate(frequency, np.array([-1.0, 0, 1.0]), mode="same") / dt / 2
         f_interp = interp1d(frequency_xs, frequency)

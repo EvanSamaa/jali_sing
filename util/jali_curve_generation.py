@@ -6,6 +6,8 @@ import json
 from matplotlib import pyplot as plt
 import os
 from scipy.interpolate import interp1d, splrep, splev
+import sys
+sys.path.insert(0, "C:/Users/evansamaa/Desktop/jali_sing")
 from util.vowel_modification_detector import vowel_mod_detector
 import copy
 
@@ -40,7 +42,7 @@ CMU2VISEME = {"AA":"Ah", "AO":"Ah", "AY":"Ah", "AW":"Ah","AE":"Eh",
               "ER": "Eh","OW":"Oo","OY":"Oo","R":"R","D":"LNTD","T": "LNTD","L":"LNTD","N":"LNTD","NG":"LNTD",
               "F":"FV","V":"FV","B":"BP","M":"M","P":"BP","CH":"ShChZh","SH":"ShChZh","ZH":"ShChZh",
               "S": "SZ", "Z": "SZ","DH":"Th", "TH":"Th","G":"GK", "K":"GK","Y":"Y","JH":"J","W":"W",}
-dip_percentage = {"U_pointer":1.05, "Oo_pointer":0.95, "Ah_pointer":0.9, "Eh_pointer":0.9,
+dip_percentage = {"U_pointer":1.05, "Oo_pointer":0.95, "Ah_pointer":0.9, "Eh_pointer":0.5,
                   "Ee_pointer":1.1, "LNTD_pointer":0.9, "M_pointer":0.9}
 cmu_sets = CMU_phonemes_dicts()
 jali_sets = JALI_visemes_dicts()
@@ -51,7 +53,8 @@ vowel_blend_magnitude = 0.95
 max_activation = 8
 # threshold_slope = 200 # for formants
 threshold_slope = 60 # for pitch
-def merge_intervals(slopes, intervals, freq_interp, xs, min_length=0.3, flatness_threshold=60):
+MIN_LENGTH = 0.05
+def merge_intervals(slopes, intervals, freq_interp, xs, min_length=MIN_LENGTH, flatness_threshold=30):
     flat_intervals = []
     flat_slopes = []
     pass_next = False
@@ -155,7 +158,6 @@ def generate_pitch_sensitive_viseme_curve(lyric, phoneme_list, phoneme_interval,
         # it can also be the first point that reaches the same pitch as the first plateau
         # this ensures that undetected vibrato will not mess up with the timing
         # and cause the mouth to open too slowly
-
         for si in range(0, len(flat_intervals)):
             current_interval_x_range = np.arange(flat_intervals[si][0], flat_intervals[si][1], 0.01)
             current_interval_f_range = interp_pitch(current_interval_x_range)
@@ -183,14 +185,14 @@ def generate_pitch_sensitive_viseme_curve(lyric, phoneme_list, phoneme_interval,
                 dif = flat_intervals[si][1] - flat_intervals[si][0] - 0.1
             control_pts_with_pitch_change.append([flat_intervals[si][0] + dif, val1, "internal"])
             break
-        # now determine intermediate key-points that correlates with lipshape
+        # now determine intermediate key-points that correlates with lip shape
         for si in range(start + 1, len(flat_intervals)):
             current_interval_x_range = np.arange(flat_intervals[si][0], flat_intervals[si][1], 0.01)
             current_interval_f_range = interp_pitch(current_interval_x_range)
 
             val0 = viseme_A(current_interval_f_range.max(), yf.max(), yf.min())
             height_ratio = dip_percentage[CMU2VISEME[phoneme_list[phone_id]] + "_pointer"]
-            #                     height_ratio = 0.9
+            # height_ratio = 0.9
             val1 = viseme_A(current_interval_f_range.max(), yf.max(), yf.min()) * height_ratio
             if len(flat_intervals) - 1 > si:
                 # if it's not the last interval
@@ -492,8 +494,6 @@ class JaliVoCa_animation():
                 for interv in int_next[2:]:
                     viseme_interval.append(interv)
                 visemes_sing.add(viseme_list[i_next], copy.deepcopy(viseme_interval), pure_phoneme_list[i_next])
-                #         if viseme_list[i_next] in jali_sets.lip_rounder:
-                #             visemes_sing(jali_sets.lip_rounder_no_jaw_dict[viseme_list[i_next]], viseme_interval, pure_phoneme_list[i_next])
                 increment = 2
             elif viseme_list[i] in jali_sets.lip_heavy:
                 # if the viseme is a lip-heavy viseme, the it is voice simutaneously as nearby labial dental and bilabials
@@ -1010,15 +1010,6 @@ if __name__ == "__main__":
     # script_path = os.path.join(dir, "audio_1_full.TextGrid")
     # output_template = "jali_MVP"
 
-
-    dir = "F:/MASC/Jali_sing/validation/faceware session 2022 Apr 1st/julie_takes/rap_jali/"
-    # tim = Minimal_song_data_structure(dir+"rap.wav", dir+"rap.txt")
-    # tim.compute_self_phoneme_alignment()
-    # tim.write_textgrid(dir, "rap_alignment")
-
-    j = JaliVoCa_animation(dir+"rap.wav", dir+"rap_alignment.TextGrid", dir + "jali_MVP.json")
+    file_dir = "F:\\MASC\\Jali_sing\\Revision\\Lip Sync live performances\\sick_love\\"
+    j = JaliVoCa_animation(file_dir + "audio.wav", file_dir + "audio.TextGrid", file_dir + "jali_MVP.json")
     j.generate_curves()
-    # dir = "E:/MASC/Sig_videos/cry_me_a_river_ella_fitzgerald"
-    # file_name_template = "audio_1"
-    # script_path = os.path.join(dir, "audio_1_full.TextGrid")
-    # output_template = "jali_MVP"
