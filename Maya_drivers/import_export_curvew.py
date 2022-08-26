@@ -1,11 +1,13 @@
 import maya.cmds as cmds
 import json
 import sys
+
+
 def init_blend_nodes():
     # test = cmds.createNode( 'pairBlend', n='Ih_pointer'+'_pairBlend_M_Vnot' )
     # Connect the translation of two nodes together
     # cmds.connectAttr( 'Pitch_Sensitivity.pitch_sensitivity', 'Ih_pointer'+'_pairBlend_M_Vnot.weight' )
-    
+
     VOWELS_JALI = set(
         ["Ih_pointer", "Ee_pointer", "Eh_pointer", "Aa_pointer", "U_pointer", "Uh_pointer", "Oo_pointer", "Oh_pointer",
          "Schwa_pointer", "Eu_pointer", "Ah_pointer"])
@@ -16,9 +18,9 @@ def init_blend_nodes():
         ["Ya_pointer", "Ja_pointer", "Ra_pointer", "FVa_pointer", "LNTDa_pointer", "Ma_pointer", "BPa_pointer",
          "Wa_pointer", "Tha_pointer", "GKa_pointer"])
     JALI_JOYSTICK = set(["JaliJoystick_Lip", "JaliJoystick_Jaw"])
-    
+
     JALI_SLIDERS_SET = set.union(VOWELS_JALI, CONSONANTS_JALI, CONSONANTS_NOJAW_JALI, JALI_JOYSTICK)
-    
+
     for item in list(JALI_SLIDERS_SET):
         try:
             cmds.delete(item + '_pairBlend_M_Pnot')
@@ -42,7 +44,7 @@ def init_blend_nodes():
             cmds.delete(item + '_M_P')
         except:
             pass
-    
+
         # this blends between two sets of musical articulation without pitch sensitivity
         cmds.createNode('pairBlend', n=item + '_pairBlend_M_Pnot')
         # this blends between two sets of musical articulation with pitch sensitivity
@@ -57,17 +59,18 @@ def init_blend_nodes():
         if item != "JaliJoystick_Jaw" and item != "JaliJoystick_Lip":
             cmds.connectAttr(item + '_pairBlend_P.outTranslate.outTranslateX', item + '.translate.translateY')
         else:
-            cmds.connectAttr(item + '_pairBlend_P.outTranslate.outTranslateX', item.split("_")[0] + "." +  item.split("_")[1], force=True)
+            cmds.connectAttr(item + '_pairBlend_P.outTranslate.outTranslateX',
+                             item.split("_")[0] + "." + item.split("_")[1], force=True)
         cmds.createNode('animCurveTL', n=item + '_M_P')
         cmds.createNode('animCurveTL', n=item + '_Mnot_P')
         cmds.createNode('animCurveTL', n=item + '_M_Pnot')
         cmds.createNode('animCurveTL', n=item + '_Mnot_Pnot')
-    
+
         cmds.connectAttr(item + '_M_P.output', item + '_pairBlend_M_P.inTranslateX2')
         cmds.connectAttr(item + '_Mnot_P.output', item + '_pairBlend_M_P.inTranslateX1')
         cmds.connectAttr(item + '_M_Pnot.output', item + '_pairBlend_M_Pnot.inTranslateX2')
         cmds.connectAttr(item + '_Mnot_Pnot.output', item + '_pairBlend_M_Pnot.inTranslateX1')
-    
+
     vowel_mod_sliders = [["Dimple", "Dimple"], ["Pucker", "Pucker"],
                          ["Ee_pointer", "lipCornerPull"], ["Ee_pointer", "lipStretch"],
                          ["Eh_pointer", "lipCornerPull"], ["Eh_pointer", "lipStretch"],
@@ -90,23 +93,28 @@ def init_blend_nodes():
         cmds.createNode('animCurveTL', n=item[0] + "_" + item[1] + '_M')
         cmds.createNode('animCurveTL', n=item[0] + "_" + item[1] + '_Mnot')
         cmds.connectAttr(item[0] + "_" + item[1] + '_M.output', item[0] + "_" + item[1] + '_pairBlend_M.inTranslateX2')
-        cmds.connectAttr(item[0] + "_" + item[1] + '_Mnot.output', item[0] + "_" + item[1] + '_pairBlend_M.inTranslateX1')
+        cmds.connectAttr(item[0] + "_" + item[1] + '_Mnot.output',
+                         item[0] + "_" + item[1] + '_pairBlend_M.inTranslateX1')
         cmds.connectAttr(item[0] + "_" + item[1] + '_pairBlend_M.outTranslate.outTranslateX', item[0] + "." + item[1])
+
 
 def get_all_slider_attributes():
     out = []
     objects = ["CNT_UPFACE", "CNT_MIDFACE", "CNT_LOFACE", "loLids", "blink", "CNT_BOTH_EYES",
-    "CNT_JAW", "jNeck_ctl", "SPEECH_PHONEMES", "SPEECH_NOJAW", "JaliJoystick"]
+               "CNT_JAW", "jNeck_ctl", "SPEECH_PHONEMES", "SPEECH_NOJAW", "JaliJoystick"]
     for object in objects:
         attrs = cmds.listAttr(object, k=True)
         for attr in attrs:
-            out.append(object+"."+attr.encode('ascii', 'ignore'))
+            out.append(object + "." + attr.encode('ascii', 'ignore'))
     return out
+
+
 def Exporting_JALI(path):
     saved_path = path
     output = {}
+
     def exporting(*args):
-        path_name = cmds.textField(saved_path, text=True, query=True)     
+        path_name = cmds.textField(saved_path, text=True, query=True)
         attrs = get_all_slider_attributes()
         for item in attrs:
             kf_t = cmds.keyframe(item, query=True)
@@ -123,16 +131,21 @@ def Exporting_JALI(path):
                 output[item]["t"] = []
                 output[item]["v"] = []
         with open(path_name, "w") as fp:
-            json.dump(output, fp)          
+            json.dump(output, fp)
+
     return exporting
+
+
 def Exporting_Vocal(path):
     saved_path = path
+
     def exporting(*args):
         output = {}
         path_name = cmds.textField(saved_path, text=True, query=True)
         curve_suffix = ["_M_P", "_Mnot_P", "_M_Pnot", "_Mnot_Pnot"]
         VOWELS_JALI = set(
-            ["Ih_pointer", "Ee_pointer", "Eh_pointer", "Aa_pointer", "U_pointer", "Uh_pointer", "Oo_pointer", "Oh_pointer",
+            ["Ih_pointer", "Ee_pointer", "Eh_pointer", "Aa_pointer", "U_pointer", "Uh_pointer", "Oo_pointer",
+             "Oh_pointer",
              "Schwa_pointer", "Eu_pointer", "Ah_pointer"])
         CONSONANTS_JALI = set(
             ["BP_pointer", "M_pointer", "JY_pointer", "Th_pointer", "ShChZh_pointer", "SZ_pointer", "GK_pointer",
@@ -144,7 +157,7 @@ def Exporting_Vocal(path):
         slider_names = list(JALI_SLIDERS_SET)
         for i in range(0, len(slider_names)):
             for curve_type in curve_suffix:
-                item_name = slider_names[i]+curve_type
+                item_name = slider_names[i] + curve_type
                 kf_t = cmds.keyframe(item_name, query=True)
                 output[item_name] = {}
                 if not kf_t is None:
@@ -157,13 +170,13 @@ def Exporting_Vocal(path):
                     output[item_name]["t"] = []
                     output[item_name]["v"] = []
         vowel_mod_sliders = [["Dimple", "Dimple"], ["Pucker", "Pucker"],
-                         ["Ee_pointer", "lipCornerPull"], ["Ee_pointer", "lipStretch"],
-                         ["Eh_pointer", "lipCornerPull"], ["Eh_pointer", "lipStretch"],
-                         ["Oo_pointer", "lipPucker"], ["U_pointer", "lipPucker"]]
+                             ["Ee_pointer", "lipCornerPull"], ["Ee_pointer", "lipStretch"],
+                             ["Eh_pointer", "lipCornerPull"], ["Eh_pointer", "lipStretch"],
+                             ["Oo_pointer", "lipPucker"], ["U_pointer", "lipPucker"]]
         for item in list(vowel_mod_sliders):
             for suffix in ["_M", "_Mnot"]:
                 n = item[0] + "_" + item[1] + suffix
-                kf_t = cmds.keyframe(n, query=True) 
+                kf_t = cmds.keyframe(n, query=True)
                 output[item_name] = {}
                 if not kf_t is None:
                     kf_v = []
@@ -190,17 +203,19 @@ def Exporting_Vocal(path):
                 else:
                     output[item_name]["t"] = []
                     output[item_name]["v"] = []
-            
-            
+
         with open(path_name, "w") as fp:
-            json.dump(output, fp)  
-                         
+            json.dump(output, fp)
+
     return exporting
+
+
 def Importing_JALI(path, model_prefix):
     saved_path = path
     saved_model_prefix = model_prefix
+
     def importing(*args):
-        path_name = cmds.textField(saved_path, text=True, query=True)    
+        path_name = cmds.textField(saved_path, text=True, query=True)
         prefix_name = cmds.textField(saved_model_prefix, text=True, query=True)
         if prefix_name == " ":
             prefix_name = ""
@@ -211,14 +226,18 @@ def Importing_JALI(path, model_prefix):
             v = motion[key]["v"]
             cmds.cutKey(key)
             for i in range(0, len(t)):
-                cmds.setKeyframe(prefix_name+key, v=v[i], t=t[i])
+                cmds.setKeyframe(prefix_name + key, v=v[i], t=t[i])
+
     return importing
+
+
 def Importing_Vocal(path, model_prefix):
     init_blend_nodes()
     saved_path = path
     saved_model_prefix = model_prefix
+
     def importing(*args):
-        path_name = cmds.textField(saved_path, text=True, query=True)     
+        path_name = cmds.textField(saved_path, text=True, query=True)
         prefix_name = cmds.textField(saved_model_prefix, text=True, query=True)
         if prefix_name == " ":
             prefix_name = ""
@@ -229,14 +248,17 @@ def Importing_Vocal(path, model_prefix):
             v = motion[key]["v"]
             cmds.cutKey(key)
             for i in range(0, len(t)):
-                cmds.setKeyframe(prefix_name+key, v=v[i], t=t[i])
-    return importing    
+                cmds.setKeyframe(prefix_name + key, v=v[i], t=t[i])
+
+    return importing
+
+
 cmds.window(width=300, title="VOCAL_import_export_tool")
 cmds.columnLayout(adjustableColumn=True)
 label1 = cmds.text("file path:")
 path = cmds.textField(text="")
 label2 = cmds.text("prefix_name:")
-prefix_name= cmds.textField(text="")
+prefix_name = cmds.textField(text="")
 cmds.button(label='Export_Jali', command=Exporting_JALI(path))
 cmds.button(label='Export_Vocal', command=Exporting_Vocal(path))
 cmds.button(label='Import_Jali', command=Importing_JALI(path, prefix_name))
