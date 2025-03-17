@@ -102,6 +102,7 @@ def get_all_slider_attributes():
     out = []
     objects = ["CNT_UPFACE", "CNT_MIDFACE", "CNT_LOFACE", "loLids", "blink", "CNT_BOTH_EYES",
                "CNT_JAW", "jNeck_ctl", "SPEECH_PHONEMES", "SPEECH_NOJAW", "JaliJoystick"]
+    objects = ["CNT_UPFACE", "CNT_MIDFACE", "loLids", "blink", "CNT_BOTH_EYES"]
     for object in objects:
         attrs = cmds.listAttr(object, k=True)
         for attr in attrs:
@@ -159,6 +160,8 @@ def Exporting_Vocal(path):
             for curve_type in curve_suffix:
                 item_name = slider_names[i] + curve_type
                 kf_t = cmds.keyframe(item_name, query=True)
+                if kf_t is None:
+                    continue
                 output[item_name] = {}
                 if not kf_t is None:
                     kf_v = []
@@ -177,16 +180,16 @@ def Exporting_Vocal(path):
             for suffix in ["_M", "_Mnot"]:
                 n = item[0] + "_" + item[1] + suffix
                 kf_t = cmds.keyframe(n, query=True)
-                output[item_name] = {}
+                output[n] = {}
                 if not kf_t is None:
                     kf_v = []
                     for tttt in kf_t:
                         kf_v.append(cmds.keyframe(n, query=True, eval=True, time=(tttt, tttt))[0])
-                    output[item_name]["t"] = kf_t
-                    output[item_name]["v"] = kf_v
+                    output[n]["t"] = kf_t
+                    output[n]["v"] = kf_v
                 else:
-                    output[item_name]["t"] = []
-                    output[item_name]["v"] = []
+                    output[n]["t"] = []
+                    output[n]["v"] = []
         slider = "JaliJoystick"
         attributessss = ["_Jaw", "_Lip"]
         for att in attributessss:
@@ -224,7 +227,7 @@ def Importing_JALI(path, model_prefix):
         for key in motion.keys():
             t = motion[key]["t"]
             v = motion[key]["v"]
-            cmds.cutKey(key)
+            cmds.cutKey(prefix_name + key)
             for i in range(0, len(t)):
                 cmds.setKeyframe(prefix_name + key, v=v[i], t=t[i])
 
@@ -232,11 +235,11 @@ def Importing_JALI(path, model_prefix):
 
 
 def Importing_Vocal(path, model_prefix):
-    init_blend_nodes()
     saved_path = path
     saved_model_prefix = model_prefix
 
     def importing(*args):
+        init_blend_nodes()
         path_name = cmds.textField(saved_path, text=True, query=True)
         prefix_name = cmds.textField(saved_model_prefix, text=True, query=True)
         if prefix_name == " ":
@@ -244,9 +247,9 @@ def Importing_Vocal(path, model_prefix):
         with open(path_name) as f:
             motion = json.load(f)
         for key in motion.keys():
+            print(key)
             t = motion[key]["t"]
             v = motion[key]["v"]
-            cmds.cutKey(key)
             for i in range(0, len(t)):
                 cmds.setKeyframe(prefix_name + key, v=v[i], t=t[i])
 

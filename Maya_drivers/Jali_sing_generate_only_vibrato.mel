@@ -1,0 +1,116 @@
+
+slider = "JaliJoystick"
+attribute = "Jaw"
+t = 0
+step_size = int(fps / vibrato_frequency)
+offsets_Jaw = []
+while t <= 747:
+    offset = cmds.getAttr(slider + '.' + attribute, t=t)
+    offsets_Jaw.append(offset)
+    t = t + step_size
+t = starting_frame
+
+slider = "JaliJoystick"
+attribute = "Lip"
+t = 0
+step_size = int(fps / vibrato_frequency)
+offsets_Lip = []
+while t <= 747:
+    offset = cmds.getAttr(slider + '.' + attribute, t=t)
+    offsets_Lip.append(offset)
+    t = t + step_size
+t = starting_frame
+
+JALI_JOYSTICK = set(["JaliJoystick_Jaw"])
+
+JALI_SLIDERS_SET = JALI_JOYSTICK
+for item in list(JALI_SLIDERS_SET):
+    try:
+        cmds.delete(item + '_pairBlend_M_Pnot')
+        cmds.delete(item + '_pairBlend_M_P')
+        cmds.delete(item + '_pairBlend_P')
+    except:
+        pass
+    try:
+        cmds.delete(item + '_Mnot_Pnot')
+    except:
+        pass
+    try:
+        cmds.delete(item + '_M_Pnot')
+    except:
+        pass
+    try:
+        cmds.delete(item + '_Mnot_P')
+    except:
+        pass
+    try:
+        cmds.delete(item + '_M_P')
+    except:
+        pass
+
+    # this blends between two sets of musical articulation without pitch sensitivity
+    cmds.createNode('pairBlend', n=item + '_pairBlend_M_Pnot')
+    # this blends between two sets of musical articulation with pitch sensitivity
+    cmds.createNode('pairBlend', n=item + '_pairBlend_M_P')
+    # this blends between two sets of musical articulation with pitch sensitivity
+    cmds.createNode('pairBlend', n=item + '_pairBlend_P')
+    cmds.connectAttr('Musical_Articulation.musical_articulation', item + '_pairBlend_M_P.weight')
+    cmds.connectAttr('Musical_Articulation.musical_articulation', item + '_pairBlend_M_Pnot.weight')
+    cmds.connectAttr('Pitch_Sensitivity.pitch_sensitivity', item + '_pairBlend_P.weight')
+    cmds.connectAttr(item + '_pairBlend_M_P.outTranslateX', item + '_pairBlend_P.inTranslateX2')
+    cmds.connectAttr(item + '_pairBlend_M_Pnot.outTranslateX', item + '_pairBlend_P.inTranslateX1')
+    if item != "JaliJoystick_Jaw" and item != "JaliJoystick_Lip":
+        cmds.connectAttr(item + '_pairBlend_P.outTranslate.outTranslateX', item + '.translate.translateY')
+    else:
+        cmds.connectAttr(item + '_pairBlend_P.outTranslate.outTranslateX',
+                         item.split("_")[0] + "." + item.split("_")[1], force=True)
+    cmds.createNode('animCurveTL', n=item + '_M_P')
+    cmds.createNode('animCurveTL', n=item + '_Mnot_P')
+    cmds.createNode('animCurveTL', n=item + '_M_Pnot')
+    cmds.createNode('animCurveTL', n=item + '_Mnot_Pnot')
+
+    cmds.connectAttr(item + '_M_P.output', item + '_pairBlend_M_P.inTranslateX2')
+    cmds.connectAttr(item + '_Mnot_P.output', item + '_pairBlend_M_P.inTranslateX1')
+    cmds.connectAttr(item + '_M_Pnot.output', item + '_pairBlend_M_Pnot.inTranslateX2')
+    cmds.connectAttr(item + '_Mnot_Pnot.output', item + '_pairBlend_M_Pnot.inTranslateX1')
+if True:
+    input_file = "F:/MASC/Jali_sing/Revision/Artist Editted Video/Free_vocal_MVP.json"
+    fps = 23.95
+    with open(input_file) as f:
+        data = json.load(f)
+    data = json.loads(data)
+    
+    vib_intervals = data["vib"]
+    # slider = "Viseme_Enunciation"
+    # attribute = "translateY"
+
+    slider = "JaliJoystick"
+    attribute = "Jaw"
+    for i in range(0, len(vib_intervals)):
+        starting_frame = vib_intervals[i][0] * fps
+        ending_frame = vib_intervals[i][1] * fps
+
+        vibrato_frequency = 10  # the lip will move 5 times per second
+        vibrato_height_initial = 0
+        vibrato_height_final = 1
+
+        vibrato_dire = -1
+        t = starting_frame
+        step_size = int(fps / vibrato_frequency)
+        offsets = []
+        while t <= ending_frame:
+            offset = cmds.getAttr(slider + '.' + attribute, t=t)
+            offsets.append(offset)
+            t = t + step_size
+        t = starting_frame
+        counter = 0
+        while t <= ending_frame:
+            vibrato_height = vibrato_height_initial + (vibrato_height_final - vibrato_height_initial) * (
+                    t - starting_frame) / (ending_frame - starting_frame)
+            cmds.setKeyframe(slider+"_Jaw_"+"M_P", v=offsets[counter] + vibrato_height * vibrato_dire, t=t)
+            cmds.setKeyframe(slider+"_Jaw_"+"Mnot_P", v=offsets[counter] + vibrato_height * vibrato_dire, t=t)
+            t = t + step_size
+            vibrato_dire = vibrato_dire * -1
+            counter = counter + 1
+        cmds.setKeyframe(slider+"_Jaw_"+"M_P", v=offsets[0], t=t)
+        cmds.setKeyframe(slider+"_Jaw_"+"Mnot_P", v=offsets[0], t=t)

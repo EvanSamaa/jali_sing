@@ -18,7 +18,7 @@ vowel2Cardinal3 = {"Ah_pointer":0, "Aa_pointer":1, "Eh_pointer":1, "Ee_pointer":
                  "Ih_pointer":1, "Oo_pointer":2, "Oh_pointer":2, "Uh_pointer":0,
                   "U_pointer":2, "Eu_pointer":2}
 
-control_direction_matrix_coarse = {0:{1:["Dimple", "Dimple", [0, 9]], 2:["Pucker", "Pucker", [0, 3]]},
+control_direction_matrix_coarse = {0:{1:["Dimple", "Dimple", [0, 9], "self", "jaw_open", [0, -3]], 2:["Pucker", "Pucker", [0, 3]]},
                                   1:{0:["self", "lipCornerPull", [0, -3],
                                        "self", "lipStretch", [0, -3]], 2:["Pucker", "Pucker", [0, 3]]},
                                   2:{0:["self", "lipPucker", [0, -7]], 1:["self", "lipPucker", [0, -7],
@@ -46,7 +46,7 @@ dip_percentage = {"U_pointer":1.05, "Oo_pointer":0.95, "Ah_pointer":0.9, "Eh_poi
                   "Ee_pointer":1.1, "LNTD_pointer":0.9, "M_pointer":0.9}
 cmu_sets = CMU_phonemes_dicts()
 jali_sets = JALI_visemes_dicts()
-spike_width = 0.5
+spike_width = 0.06
 speech_vowel_threshold = 0.3
 vowel_blend_distance = 0.3
 vowel_blend_magnitude = 0.95
@@ -320,7 +320,7 @@ viseme_A = Viseme_A()
 
 class JaliVoCa_animation():
     def __init__(self, sound_path, transcript_path, output_path, use_torch=False):
-        self.spike_width = 0.5
+        self.spike_width = spike_width
         self.speech_vowel_threshold = 0.3
         self.vowel_blend_distance = 0.3
         self.vowel_blend_magnitude = 0.95
@@ -811,15 +811,9 @@ class JaliVoCa_animation():
                                  vowel_mod_out_coarse.shape[0])
                 coarse_vowel_sounds_like_interp = interp1d(xs, vowel_mod_out_coarse, axis=0)
 
-                #         for i in range(0, 4):
-                #             plt.plot(vowel_mod_out_coarse[:, i], label=["Ah", "stretcher", "rounder", "silence"][i])
-                # #         plt.plot(np.argmax(out[0, :], axis=1))
-                #         plt.legend()
-                #         plt.show()
-
                 # what the original sound was
                 original_vowel_shape = vowel2Cardinal3[viseme_list[i]]
-                only_peaks = np.where(vowel_mod_out_coarse > 0.75, vowel_mod_out_coarse, 0)
+                only_peaks = np.where(vowel_mod_out_coarse > 0.7, vowel_mod_out_coarse, 0)
                 vowel_sounds_like = np.argmax(only_peaks, axis=1)
                 ##################################################################
                 ### obtain the intervals of which cardinal vowels are dominant ###
@@ -858,7 +852,8 @@ class JaliVoCa_animation():
                         cardinal_list_new.append(cardinal_list[j])
                         cardinal_intervals_new.append([cardinal_intervals[j][0], cardinal_intervals[j + 1][1]])
                         step = 2
-                    elif j < len(cardinal_list) - 2:
+                    # I will disable this path for now
+                    elif j < len(cardinal_list) - 2 and False:
                         if (cardinal_list[j] == cardinal_list[j + 2] and xs[cardinal_intervals[j + 2][0]] - xs[
                             cardinal_intervals[j][1]] <= spike_width
                                 and cardinal_list[j + 1] == original_vowel_shape):
@@ -871,6 +866,19 @@ class JaliVoCa_animation():
                     j = j + step
                 cardinal_list = cardinal_list_new
                 cardinal_intervals = cardinal_intervals_new
+
+                # debug
+                # print(viseme_list[i])
+                # print(cardinal_list, cardinal_intervals)
+                # plt.title("Detected Vowel Modification Detection during \"ALL\"")
+                # for ii in range(0, 3):
+                #     plt.plot(vowel_mod_out_coarse[:, ii],
+                #              label=["No Change", "Lip Stretch", "Lip Rounding", "Silence"][ii])
+                # plt.ylabel("Vowel Modification probability")
+                # plt.xlabel("time step (frame)")
+                # plt.legend()
+                # plt.show()
+
                 # now set pucker/stretch values based on the detected sound
                 for c in range(0, len(cardinal_list)):
                     if original_vowel_shape == cardinal_list[c] or cardinal_list[c] == 3:
@@ -905,13 +913,13 @@ class JaliVoCa_animation():
                                 # find the previous c that is not the current vowel
                                 ci = -1
                                 for ccci in range(c - 1, -1, -1):
-                                    if original_vowel_shape != cardinal_list[ccci] and cardinal_list[ccci] != 3:
+                                    if cardinal_list[c] != cardinal_list[ccci] and cardinal_list[ccci] != 3:
                                         ci = ccci
                                         break
                                 if ci > -1:
-                                    #                             start_candidate = (xs[cardinal_intervals[ci][1]] - xs[cardinal_intervals[ci][0]]) * 0.6 + xs[cardinal_intervals[ci][0]]
-                                    #                             start_candidate = min(start_candidate, xs[cardinal_intervals[c][0]]-0.12)
-                                    start_candidate = xs[cardinal_intervals[ci][0]]
+                                    # start_candidate = (xs[cardinal_intervals[ci][1]] - xs[cardinal_intervals[ci][0]]) * 0.6 + xs[cardinal_intervals[ci][0]]
+                                    # start_candidate = min(start_candidate, xs[cardinal_intervals[c][0]]-0.12)
+                                    start_candidate = xs[cardinal_intervals[c][0]] - 0.12
                                     start = max(start_candidate, viseme_interval[i][0][0])
                                     if np.abs(start - viseme_interval[i][0][0]) <= 0.2:
                                         start = viseme_interval[i][0][0] - 0.12
@@ -932,13 +940,13 @@ class JaliVoCa_animation():
                             #                     modification_sliders.append([slider_name, slider_attribute])
                             ci = -1
                             for ccci in range(c + 1, len(cardinal_intervals)):
-                                if original_vowel_shape != cardinal_list[ccci] and cardinal_list[ccci] != 3:
+                                if cardinal_list[c] != cardinal_list[ccci]:
                                     ci = ccci
                                     break
                             if ci == -1:
                                 ctrl_pts.append([viseme_interval[i][-1][0] + 0.16, slider_range[0]])
                             else:
-                                ctrl_pts.append([viseme_interval[i][-1][0] + 0.12, slider_range[0]])
+                                ctrl_pts.append([xs[cardinal_intervals[c][-1]] + 0.13, slider_range[0]])
 
                             # add the peaks in the middle with the decay
 
