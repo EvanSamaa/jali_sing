@@ -5,7 +5,7 @@ import json
 # input_file = "C:/Users/evansamaa/Desktop/vowel_model_dataset/A_I_A_I_A_I.json"
 # input_file = "F:\\MASC\\Jali_sing\\Sig_videos\\song2face3\\song2face_3\\audio_jali_MVP.json"
 # input_file = "F:\\MASC\\Jali_sing\\Sig_videos\\child_in_time\\audio_jali_MVP.json"
-input_file = "F:/MASC/Jali_sing/Sig_fast_forward/Evan_mumble/fast_forward_MVP.json"
+input_file = "C:/Users/evansamaa/Downloads/dynamite_short.json"
 def init_blend_nodes():
     # test = cmds.createNode( 'pairBlend', n='Ih_pointer'+'_pairBlend_M_Vnot' )
     # Connect the translation of two nodes together

@@ -51,9 +51,12 @@ class Custom_data_set():
         phoneme_list = []
 
         # load the transcript file
-        with open(transcirpt_path, "r") as file:
-            transcript = file.read()
-
+        try:
+            with open(transcirpt_path, "r") as file:
+                transcript = file.read()
+        except:
+            with open(transcirpt_path, "r", encoding="utf-8") as file:
+                transcript = file.read()
         # replace useless symbols
         transcript = transcript.replace("\n", " ")
         transcript = transcript.replace(",", "")
@@ -93,7 +96,7 @@ class Custom_data_set():
         sound = []
         samplerate = sound_object.sampling_frequency
         for k in range(0, data.shape[0]):
-            sound.append(librosa.resample(data[k, :], samplerate, 16000))
+            sound.append(librosa.resample(data[k, :], orig_sr=samplerate, target_sr=16000))
         sound = np.array(sound)
         if vocab == "visemes":
             sound = (sound - sound.mean()) / sound.std()

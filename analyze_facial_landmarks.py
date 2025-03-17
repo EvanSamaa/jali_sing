@@ -27,6 +27,6 @@ def simplify_media_pipe_landmarks(face_arr):
 
 
 if __name__ == "__main__":
-    landmark_data_path = "E:\\MASC\\facial_data_analysis_videos\\12\\video\\2D_mediapipe_landmark.npy"
+    landmark_data_path = "F:\\MASC\\facial_data_analysis_videos\\12\\video\\2D_mediapipe_landmark.npy"
     landmark_data = np.load(landmark_data_path)
     display_landmark(landmark_data, 32)
